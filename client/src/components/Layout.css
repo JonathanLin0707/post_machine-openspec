@@ -1,0 +1,11 @@
+.nav-item {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+}
+
+.nav-item.active {
+  @apply bg-primary text-white shadow-md;
+}
+
+.nav-item.inactive {
+  @apply text-gray-600 hover:bg-gray-100;
+}
