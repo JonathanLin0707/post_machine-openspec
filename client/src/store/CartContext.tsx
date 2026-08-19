@@ -14,6 +14,8 @@ interface CartStore {
   addItem: (item: Omit<CartItem, 'subtotal'>) => void
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, delta: number) => void
+  increaseQuantity: (productId: string) => boolean
+  decreaseQuantity: (productId: string) => void
   clearCart: () => void
 }
 
@@ -48,19 +50,36 @@ export const useCartStore = create<CartStore>()(
         }))
       },
 
-      updateQuantity: (productId, delta) => {
+      increaseQuantity: (productId): boolean => {
+        const item = get().items.find((i) => i.productId === productId)
+        if (!item) return false
+        
+        // Check if adding 1 more exceeds stock
+        const canAdd = item.quantity < item.stock
+        
+        if (canAdd) {
+          set((state) => {
+            const newQuantity = item.quantity + 1
+            return {
+              items: state.items.map((i) =>
+                i.productId === productId
+                  ? { ...i, quantity: newQuantity, subtotal: i.price * newQuantity }
+                  : i
+              ),
+            }
+          })
+        }
+        
+        return canAdd
+      },
+
+      decreaseQuantity: (productId) => {
         set((state) => {
           const item = state.items.find((i) => i.productId === productId)
-          if (!item) return state
+          if (!item || item.quantity <= 1) return state
 
-          // const newQuantity = item.quantity + delta
-          const newQuantity = delta
-          if (newQuantity <= 0) {
-            return {
-              items: state.items.filter((i) => i.productId !== productId),
-            }
-          }
-
+          const newQuantity = item.quantity - 1
+          // Increase stock when decreasing cart quantity
           return {
             items: state.items.map((i) =>
               i.productId === productId

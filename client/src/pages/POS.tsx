@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import ProductCard from '../components/ProductCard'
 import CartItem from '../components/CartItem'
 import CategoryFilter from '../components/CategoryFilter'
+import Toast from '../components/Toast'
 import { useCartStore } from '../store/CartContext'
 import api from '../services/api'
 import { Product, CartItem as CartItemType } from '../../../shared/types'
@@ -15,6 +16,7 @@ export default function POS({ onCheckout }: POSProps) {
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
   
   const cart = useCartStore((state) => state.items)
 
@@ -48,12 +50,13 @@ export default function POS({ onCheckout }: POSProps) {
           : p
       ))
       
-      // Add to cart store
+      // Add to cart store with stock info
       useCartStore.getState().addItem({
         productId: product.id,
         name: product.name,
         price: product.price,
-        quantity: 1
+        quantity: 1,
+        stock: product.stock
       })
     } catch (error) {
       console.error('Failed to add to cart:', error)
@@ -62,6 +65,28 @@ export default function POS({ onCheckout }: POSProps) {
         p.id === product.id ? { ...p, stock: p.stock + 1 } : p
       ))
     }
+  }
+
+  // Show toast notification
+  const showToast = (message: string) => {
+    setToastMessage(message)
+    setTimeout(() => setToastMessage(null), 3000)
+  }
+
+  // Increase quantity with stock check
+  const handleIncreaseQuantity = (productId: string, currentStock: number) => {
+    const item = useCartStore.getState().items.find(i => i.productId === productId)
+    if (item && item.stock - item.quantity <= 0) {
+      showToast(`庫存不足：${item.name} 僅剩 ${item.stock} 件`)
+      return false
+    }
+    useCartStore.getState().increaseQuantity(productId)
+    return true
+  }
+
+  // Decrease quantity
+  const handleDecreaseQuantity = (productId: string) => {
+    useCartStore.getState().decreaseQuantity(productId)
   }
 
   // Clear cart
@@ -115,7 +140,7 @@ export default function POS({ onCheckout }: POSProps) {
               {filteredProducts.map(product => (
                 <ProductCard
                   key={product.id}
-                  product={product}
+                  product={{ ...product, stock: Math.max(0, product.stock) }}
                   onAddToCart={handleAddToCart}
                 />
               ))}
@@ -141,7 +166,9 @@ export default function POS({ onCheckout }: POSProps) {
             cart.map(item => (
               <CartItem
                 key={item.productId}
-                item={item}
+                item={{ ...item, stock: Math.max(0, item.stock) }}
+                onIncrease={(productId, currentStock) => handleIncreaseQuantity(productId, currentStock)}
+                onDecrease={handleDecreaseQuantity}
               />
             ))
           )}
@@ -184,23 +211,28 @@ export default function POS({ onCheckout }: POSProps) {
             </div>
           </div>
 
-          <button
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl shadow-lg active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => onCheckout(cart)}
-            disabled={cart.length === 0}
-          >
-            完成結帳
-          </button>
-          
-          <button
-            className="w-full bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md active:scale-95 transition-transform mt-2"
-            onClick={handleClearCart}
-          >
-            清空購物車
-          </button>
+           <button
+             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl shadow-lg active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+             onClick={() => onCheckout(cart)}
+             disabled={cart.length === 0}
+           >
+             完成結帳
+           </button>
+           
+           <button
+             className="w-full bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md active:scale-95 transition-transform mt-2"
+             onClick={handleClearCart}
+           >
+             清空購物車
+           </button>
 
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <Toast message={toastMessage} type="error" onClose={() => setToastMessage(null)} />
+      )}
     </div>
   )
 }
