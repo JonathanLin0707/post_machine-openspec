@@ -110,9 +110,8 @@ router.post('/', (req: Request, res: Response) => {
 
   // Create order
   try {
-    createOrder.run(grandTotal, tax, payment_method)
-    // @ts-ignore - lastInsertRowid is a property of RunResult in better-sqlite3
-    const orderId = createOrder.run.lastInsertRowid!
+    const result = createOrder.run(grandTotal, tax, payment_method)
+    const orderId = result.lastInsertRowid!
 
     // Insert order items
     for (const item of orderItems) {
