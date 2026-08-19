@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 interface CategoryFilterProps {
   categories: string[]
   selectedCategory: string | null

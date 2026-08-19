@@ -1,30 +1,41 @@
 import { Router, Request, Response } from 'express'
-import { getDb } from '../database'
+import { initDatabase, getDb } from '../database.js'
+
+initDatabase()
+const db = getDb()
 
 const router = Router()
+
+// Prepared statements for products
+const getAllProducts = db.prepare('SELECT * FROM products')
+const getProductById = db.prepare('SELECT * FROM products WHERE id = ?')
+const createProduct = db.prepare(`INSERT INTO products (name, price, barcode, category, stock, image_url) 
+                                  VALUES (?, ?, ?, ?, ?, ?)`)
+const updateProduct = db.prepare(`UPDATE products 
+                                   SET name = ?, price = ?, barcode = ?, category = ?, stock = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP
+                                   WHERE id = ?`)
+const deleteProduct = db.prepare('DELETE FROM products WHERE id = ?')
 
 // GET /api/products - Get all products with search and filter
 router.get('/', (req: Request, res: Response) => {
   const { search, category } = req.query
-  const db = getDb()
-
   let products: any[] = []
-  
+
   try {
-    const data = db.exec('SELECT * FROM products')
-    if (data.length > 0 && data[0].values) {
-      products = data[0].values.map(row => ({
-        id: row[0],
-        name: row[1],
-        price: row[2],
-        barcode: row[3],
-        category: row[4],
-        stock: row[5],
-        image_url: row[6] || null,
-        created_at: row[7] || null,
-        updated_at: row[8] || null
-      }))
-    }
+    const rows = getAllProducts.all() as any[]
+    rows.forEach((row) => {
+      products.push({
+        id: row.id,
+        name: row.name,
+        price: row.price,
+        barcode: row.barcode,
+        category: row.category,
+        stock: row.stock,
+        image_url: row.image_url || null,
+        created_at: row.created_at || null,
+        updated_at: row.updated_at || null
+      })
+    })
   } catch (error) {
     console.error('Error fetching products:', error)
   }
@@ -49,26 +60,22 @@ router.get('/', (req: Request, res: Response) => {
 
 // GET /api/products/:id - Get single product
 router.get('/:id', (req: Request, res: Response) => {
-  const db = getDb()
-  
   try {
-    const data = db.exec(`SELECT * FROM products WHERE id = ?`, [req.params.id])
-    if (data.length > 0 && data[0].values && data[0].values.length > 0) {
-      const row = data[0].values[0]
-      res.json({
-        id: row[0],
-        name: row[1],
-        price: row[2],
-        barcode: row[3],
-        category: row[4],
-        stock: row[5],
-        image_url: row[6] || null,
-        created_at: row[7] || null,
-        updated_at: row[8] || null
-      })
-    } else {
-      res.status(404).json({ error: 'Product not found' })
+    const row = getProductById.get([req.params.id]) as any
+    if (!row) {
+      return res.status(404).json({ error: 'Product not found' })
     }
+    res.json({
+      id: row.id,
+      name: row.name,
+      price: row.price,
+      barcode: row.barcode,
+      category: row.category,
+      stock: row.stock,
+      image_url: row.image_url || null,
+      created_at: row.created_at || null,
+      updated_at: row.updated_at || null
+    })
   } catch (error) {
     console.error('Error fetching product:', error)
     res.status(500).json({ error: 'Failed to fetch product' })
@@ -77,7 +84,6 @@ router.get('/:id', (req: Request, res: Response) => {
 
 // POST /api/products - Create new product
 router.post('/', (req: Request, res: Response) => {
-  const db = getDb()
   const { name, price, barcode, category, stock, image_url } = req.body
 
   // Validation
@@ -90,31 +96,27 @@ router.post('/', (req: Request, res: Response) => {
   }
 
   try {
-    const result = db.run(
-      `INSERT INTO products (name, price, barcode, category, stock, image_url) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, price, barcode || null, category || null, stock || 0, image_url || null]
-    )
-
-    const id = result.lastInsertRowid
-    const data = db.exec(`SELECT * FROM products WHERE id = ?`, [id])
+    const insertResult = createProduct.run(name, price, barcode || null, category || null, stock || 0, image_url || null)
     
-    if (data.length > 0 && data[0].values && data[0].values.length > 0) {
-      const row = data[0].values[0]
-      res.status(201).json({
-        id: row[0],
-        name: row[1],
-        price: row[2],
-        barcode: row[3],
-        category: row[4],
-        stock: row[5],
-        image_url: row[6] || null,
-        created_at: row[7] || null,
-        updated_at: row[8] || null
-      })
-    } else {
-      res.status(500).json({ error: 'Failed to create product' })
+    // Get the newly created product
+    const id = Number(insertResult.lastInsertRowid)
+    const row = getProductById.get([id]) as any
+    
+    if (!row) {
+      return res.status(500).json({ error: 'Failed to create product' })
     }
+
+    res.status(201).json({
+      id: row.id,
+      name: row.name,
+      price: row.price,
+      barcode: row.barcode,
+      category: row.category,
+      stock: row.stock,
+      image_url: row.image_url || null,
+      created_at: row.created_at || null,
+      updated_at: row.updated_at || null
+    })
   } catch (error: any) {
     if (error.message.includes('UNIQUE constraint failed')) {
       return res.status(409).json({ error: 'Product name or barcode already exists' })
@@ -125,7 +127,6 @@ router.post('/', (req: Request, res: Response) => {
 
 // POST /api/products/cart - Add product to cart (decrease stock)
 router.post('/cart', (req: Request, res: Response) => {
-  const db = getDb()
   const { productId, quantity } = req.body
 
   if (!productId || !quantity || quantity <= 0) {
@@ -133,37 +134,29 @@ router.post('/cart', (req: Request, res: Response) => {
   }
 
   try {
-    // Decrease stock
-    const result = db.run(
-      `UPDATE products 
-       SET stock = stock - ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ? AND stock >= ?`,
-      [quantity, productId, quantity]
-    )
-
-    if (result.changes === 0) {
+    const updateResult = updateProduct.run(quantity, productId, quantity)
+    
+    if (updateResult.changes === 0) {
       return res.status(400).json({ error: 'Insufficient stock' })
     }
 
-    // Get updated product
-    const data = db.exec(`SELECT * FROM products WHERE id = ?`, [productId])
-    if (data.length > 0 && data[0].values && data[0].values.length > 0) {
-      const row = data[0].values[0]
-      res.json({
-        id: row[0],
-        name: row[1],
-        price: row[2],
-        barcode: row[3],
-        category: row[4],
-        stock: row[5],
-        image_url: row[6] || null,
-        created_at: row[7] || null,
-        updated_at: row[8] || null
-      })
-    } else {
-      res.status(500).json({ error: 'Failed to update stock' })
+    const row = getProductById.get([productId]) as any
+    if (!row) {
+      return res.status(500).json({ error: 'Failed to update stock' })
     }
-  } catch (error) {
+
+    res.json({
+      id: row.id,
+      name: row.name,
+      price: row.price,
+      barcode: row.barcode,
+      category: row.category,
+      stock: row.stock,
+      image_url: row.image_url || null,
+      created_at: row.created_at || null,
+      updated_at: row.updated_at || null
+    })
+  } catch (error: any) {
     if (error.message.includes('FOREIGN KEY constraint failed')) {
       return res.status(404).json({ error: 'Product not found' })
     }
@@ -173,30 +166,29 @@ router.post('/cart', (req: Request, res: Response) => {
 
 // PUT /api/products/:id - Update product
 router.put('/:id', (req: Request, res: Response) => {
-  const db = getDb()
   const { name, price, barcode, category, stock, image_url } = req.body
 
   // Check if product exists
   try {
-    const data = db.exec(`SELECT * FROM products WHERE id = ?`, [req.params.id])
-    if (!data.length || !data[0].values || data[0].values.length === 0) {
+    const row = getProductById.get([req.params.id]) as any
+    if (!row) {
       return res.status(404).json({ error: 'Product not found' })
     }
-    
-    const existing = data[0].values[0] as any
+
+    const existing = row
 
     // Validation for name uniqueness (excluding current product)
     if (name && name !== existing.name) {
-      const duplicateData = db.exec(`SELECT * FROM products WHERE name = ? AND id != ?`, [name, req.params.id])
-      if (duplicateData.length > 0 && duplicateData[0].values && duplicateData[0].values.length > 0) {
+      const duplicateRow = db.prepare('SELECT * FROM products WHERE name = ? AND id != ?').get(name, req.params.id) as any
+      if (duplicateRow) {
         return res.status(409).json({ error: 'Product name already exists' })
       }
     }
 
     // Validation for barcode uniqueness (excluding current product)
     if (barcode && barcode !== existing.barcode) {
-      const duplicateData = db.exec(`SELECT * FROM products WHERE barcode = ? AND id != ?`, [barcode, req.params.id])
-      if (duplicateData.length > 0 && duplicateData[0].values && duplicateData[0].values.length > 0) {
+      const duplicateRow = db.prepare('SELECT * FROM products WHERE barcode = ? AND id != ?').get(barcode, req.params.id) as any
+      if (duplicateRow) {
         return res.status(409).json({ error: 'Barcode already exists' })
       }
     }
@@ -205,37 +197,41 @@ router.put('/:id', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Price must be greater than 0' })
     }
 
-    const result = db.run(`
-      UPDATE products 
-      SET name = ?, price = ?, barcode = ?, category = ?, stock = ?, image_url = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `, [
-      name || existing.name,
-      price ?? existing.price,
-      barcode ?? existing.barcode,
-      category ?? existing.category,
-      stock ?? existing.stock,
-      image_url ?? existing.image_url,
-      req.params.id
-    ])
+    // Only update fields that have new values provided
+    const newName = name || existing.name
+    const newPrice = price ?? existing.price
+    const newBarcode = barcode ?? existing.barcode
+    const newCategory = category ?? existing.category
+    const newStock = stock ?? existing.stock
+    const newImageUrl = image_url ?? existing.image_url
 
-    const updatedData = db.exec(`SELECT * FROM products WHERE id = ?`, [req.params.id])
-    if (updatedData.length > 0 && updatedData[0].values && updatedData[0].values.length > 0) {
-      const row = updatedData[0].values[0]
-      res.json({
-        id: row[0],
-        name: row[1],
-        price: row[2],
-        barcode: row[3],
-        category: row[4],
-        stock: row[5],
-        image_url: row[6] || null,
-        created_at: row[7] || null,
-        updated_at: row[8] || null
-      })
-    } else {
-      res.status(500).json({ error: 'Failed to update product' })
+    // Use COALESCE to preserve NULL values when not updating
+    updateProduct.run(
+      newName,
+      newPrice,
+      newBarcode || null,
+      newCategory,
+      newStock,
+      newImageUrl || null,
+      req.params.id
+    )
+
+    const updatedRow = getProductById.get([req.params.id]) as any
+    if (!updatedRow) {
+      return res.status(500).json({ error: 'Failed to update product' })
     }
+
+    res.json({
+      id: updatedRow.id,
+      name: updatedRow.name,
+      price: updatedRow.price,
+      barcode: updatedRow.barcode,
+      category: updatedRow.category,
+      stock: updatedRow.stock,
+      image_url: updatedRow.image_url || null,
+      created_at: updatedRow.created_at || null,
+      updated_at: updatedRow.updated_at || null
+    })
   } catch (error) {
     console.error('Error updating product:', error)
     res.status(500).json({ error: 'Failed to update product' })
@@ -244,16 +240,13 @@ router.put('/:id', (req: Request, res: Response) => {
 
 // DELETE /api/products/:id - Delete product
 router.delete('/:id', (req: Request, res: Response) => {
-  const db = getDb()
-  
-  // Check if product exists
   try {
-    const data = db.exec(`SELECT * FROM products WHERE id = ?`, [req.params.id])
-    if (!data.length || !data[0].values || data[0].values.length === 0) {
+    const row = getProductById.get([req.params.id]) as any
+    if (!row) {
       return res.status(404).json({ error: 'Product not found' })
     }
 
-    db.run('DELETE FROM products WHERE id = ?', [req.params.id])
+    deleteProduct.run(req.params.id)
     res.json({ message: 'Product deleted successfully' })
   } catch (error) {
     console.error('Error deleting product:', error)

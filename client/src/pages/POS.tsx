@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import ProductCard from '../components/ProductCard'
 import CartItem from '../components/CartItem'
 import CategoryFilter from '../components/CategoryFilter'
-import Toast from '../components/Toast'
 import { useCartStore } from '../store/CartContext'
 import api from '../services/api'
 import { Product, CartItem as CartItemType } from '../../../shared/types'
@@ -37,7 +36,7 @@ export default function POS({ onCheckout }: POSProps) {
   }
 
   // Extract unique categories
-  const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)))
+  const categories = Array.from(new Set(products.map(p => p.category).filter((c): c is string => c !== undefined && c !== null))) as string[]
 
   // Add product to cart (local state only)
   const handleAddToCart = async (product: Product) => {
@@ -63,16 +62,6 @@ export default function POS({ onCheckout }: POSProps) {
         p.id === product.id ? { ...p, stock: p.stock + 1 } : p
       ))
     }
-  }
-
-  // Update cart quantity
-  const handleUpdateQuantity = (productId: string, delta: number) => {
-    useCartStore.getState().updateQuantity(productId, delta)
-  }
-
-  // Remove item from cart
-  const handleRemoveItem = (productId: string) => {
-    useCartStore.getState().removeItem(productId)
   }
 
   // Clear cart

@@ -1,10 +1,10 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import productsRoutes from './routes/products'
-import ordersRoutes from './routes/orders'
-import reportsRoutes from './routes/reports'
-import { initDatabase, saveDatabase } from './database'
+import productsRoutes from './routes/products.js'
+import ordersRoutes from './routes/orders.js'
+import reportsRoutes from './routes/reports.js'
+import { initDatabase, saveDatabase } from './database.js'
 
 dotenv.config()
 
@@ -17,38 +17,29 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 // Initialize database before setting up routes
-initDatabase().then(() => {
-  // Routes
-  app.use('/api/products', productsRoutes)
-  app.use('/api/orders', ordersRoutes)
-  app.use('/api/reports', reportsRoutes)
+const db = initDatabase()
 
-  // Health check
-  app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() })
-  })
+// Routes
+app.use('/api/products', productsRoutes)
+app.use('/api/orders', ordersRoutes)
+app.use('/api/reports', reportsRoutes)
 
-  // Error handling middleware
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('Error:', err.message)
-    res.status(err.status || 500).json({
-      error: err.message || 'Internal server error',
-    })
-  })
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
 
-  // Save database on exit
-  process.on('beforeExit', saveDatabase)
-  process.on('SIGINT', () => {
-    saveDatabase()
-    process.exit(0)
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error:', err.message)
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal server error',
   })
+})
 
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`)
-  })
-}).catch((error) => {
-  console.error('Failed to initialize database:', error)
-  process.exit(1)
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`)
+  console.log('Database data will be automatically persisted to disk')
 })
 
 export default app

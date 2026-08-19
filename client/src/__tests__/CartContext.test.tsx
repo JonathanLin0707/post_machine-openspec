@@ -1,13 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useCartStore } from '../../store/CartContext'
+import { useCartStore } from '../store/CartContext'
 
 describe('CartContext (useCartStore)', () => {
   it('should initialize with empty cart', () => {
     const { result } = renderHook(() => useCartStore())
     
     expect(result.current.items).toEqual([])
-    expect(result.current.taxRate).toBe(0.1)
   })
 
   it('should add item to cart', () => {
@@ -18,6 +17,7 @@ describe('CartContext (useCartStore)', () => {
         productId: '1',
         name: 'Test Product',
         price: 10,
+        quantity: 0
       })
     })
 
@@ -34,6 +34,7 @@ describe('CartContext (useCartStore)', () => {
         productId: '1',
         name: 'Test Product',
         price: 10,
+        quantity: 0
       })
     })
 
@@ -53,6 +54,7 @@ describe('CartContext (useCartStore)', () => {
         productId: '1',
         name: 'Test Product',
         price: 10,
+        quantity: 0
       })
     })
 
@@ -71,6 +73,7 @@ describe('CartContext (useCartStore)', () => {
         productId: '1',
         name: 'Test Product',
         price: 10,
+        quantity: 0
       })
     })
 

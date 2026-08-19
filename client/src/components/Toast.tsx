@@ -7,7 +7,7 @@ interface ToastProps {
 }
 
 export default function Toast({ message, type = 'info', onClose }: ToastProps) {
-  const [visible, setVisible] = useState(true)
+  const [visible] = useState(true)
 
   useEffect(() => {
     const timer = setTimeout(onClose, 3000)

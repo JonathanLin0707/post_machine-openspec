@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import POS from './pages/POS'
@@ -12,9 +11,6 @@ function App() {
     try {
       console.log('Starting checkout with items:', cartItems)
       
-      // Create order in database via API
-      const totalAmount = cartItems.reduce((sum, item) => sum + item.subtotal, 0)
-
       // Create order - send items with product_id (server calculates total and tax)
       await api.post('/orders', {
         items: cartItems.map(item => ({

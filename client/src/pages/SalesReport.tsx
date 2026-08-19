@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
-import { DailyReport, MonthlyReport, TopProduct } from '../shared/types'
+import { DailyReport, MonthlyReport, TopProduct } from '../../../shared/types'
 
 export default function SalesReport() {
   const [dailyData, setDailyData] = useState<DailyReport[]>([])

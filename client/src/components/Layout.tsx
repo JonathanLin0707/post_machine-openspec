@@ -7,7 +7,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const [activeTab, setActiveTab] = useState('pos')
+  const [activeTab] = useState('pos')
   const location = useLocation()
 
   const navItems = [
