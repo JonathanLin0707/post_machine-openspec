@@ -68,11 +68,11 @@ router.post('/', (req: Request, res: Response) => {
       }
 
       const product = {
-        id: Number(productRow[0]),
-        name: String(productRow[1]),
-        price: Number(productRow[2]),
-        stock: Number(productRow[5]),
-        category: String(productRow[4]),
+        id: Number((productRow as Record<string, unknown>)['id']),
+        name: String((productRow as Record<string, unknown>)['name']),
+        price: Number((productRow as Record<string, unknown>)['price']),
+        stock: Number((productRow as Record<string, unknown>)['stock']),
+        category: String((productRow as Record<string, unknown>)['category']),
       }
 
       if (product.stock < item.quantity) {
@@ -111,7 +111,8 @@ router.post('/', (req: Request, res: Response) => {
   // Create order
   try {
     createOrder.run(grandTotal, tax, payment_method)
-    const orderId = db.lastInsertRowid()
+    // @ts-ignore - lastInsertRowid is a property of RunResult in better-sqlite3
+    const orderId = createOrder.run.lastInsertRowid!
 
     // Insert order items
     for (const item of orderItems) {
@@ -124,13 +125,13 @@ router.post('/', (req: Request, res: Response) => {
     }
 
     res.status(201).json({
-      id: orderData[0],
-      total: orderData[1],
-      tax: orderData[2],
-      payment_method: orderData[3],
-      status: orderData[4],
-      created_at: orderData[5],
-      items_json: orderData[6] || []
+      id: Number((orderData as Record<string, unknown>)['id']),
+      total: Number((orderData as Record<string, unknown>)['total']),
+      tax: Number((orderData as Record<string, unknown>)['tax']),
+      payment_method: String((orderData as Record<string, unknown>)['payment_method']),
+      status: String((orderData as Record<string, unknown>)['status']),
+      created_at: String((orderData as Record<string, unknown>)['created_at']),
+      items_json: (orderData as Record<string, unknown>)['items_json'] || []
     })
   } catch (error) {
     console.error('Error creating order:', error)
@@ -144,14 +145,14 @@ router.get('/', (req: Request, res: Response) => {
     const rows = getAllOrdersWithItems.all()
     const orders: any[] = []
     
-    rows.forEach((row: any[]) => {
+    rows.forEach((row: any) => {
       orders.push({
-        id: row[0],
-        total: row[1],
-        tax: row[2],
-        payment_method: row[3],
-        status: row[4],
-        created_at: row[5],
+        id: Number(row[0]),
+        total: Number(row[1]),
+        tax: Number(row[2]),
+        payment_method: String(row[3]),
+        status: String(row[4]),
+        created_at: String(row[5]),
         items_json: row[6] || []
       })
     })
@@ -166,18 +167,18 @@ router.get('/', (req: Request, res: Response) => {
 // GET /api/orders/:id - Get single order with items
 router.get('/:id', (req: Request, res: Response) => {
   try {
-    const row = getOrderByIdWithItems.get([req.params.id])
+    const row = getOrderByIdWithItems.get([req.params.id]) as unknown[]
     if (!row) {
       return res.status(404).json({ error: 'Order not found' })
     }
 
     res.json({
-      id: row[0],
-      total: row[1],
-      tax: row[2],
-      payment_method: row[3],
-      status: row[4],
-      created_at: row[5],
+      id: Number(row[0]),
+      total: Number(row[1]),
+      tax: Number(row[2]),
+      payment_method: String(row[3]),
+      status: String(row[4]),
+      created_at: String(row[5]),
       items_json: row[6] || []
     })
   } catch (error) {

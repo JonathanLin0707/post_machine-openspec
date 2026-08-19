@@ -1,2 +1,4 @@
 .opencode/
 node_modules/
+server/data/grocery.db-shm
+server/data/grocery.db-wal

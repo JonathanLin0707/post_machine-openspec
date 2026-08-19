@@ -21,9 +21,9 @@ router.get('/daily', (req: Request, res: Response) => {
 
     const todayData: any = {}
     if (todaySummary) {
-      todayData.order_count = Number(todaySummary.order_count) || 0
-      todayData.total_sales = Number(todaySummary.total_sales) || 0
-      todayData.average_order_value = Number(todaySummary.average_order_value) || 0
+      todayData.order_count = Number((todaySummary as Record<string, unknown>)['order_count']) || 0
+      todayData.total_sales = Number((todaySummary as Record<string, unknown>)['total_sales']) || 0
+      todayData.average_order_value = Number((todaySummary as Record<string, unknown>)['average_order_value']) || 0
     }
 
     // Get last 30 days data for chart
@@ -39,7 +39,7 @@ router.get('/daily', (req: Request, res: Response) => {
     GROUP BY DATE(created_at)
     ORDER BY date ASC`).all(thirtyDaysAgo.toISOString().split('T')[0])
 
-    const result = dailyData.map((row: any[]) => ({
+    const result = dailyData.map((row: any) => ({
       date: row[0],
       orderCount: Number(row[1]) || 0,
       totalSales: Number(row[2]) || 0
@@ -69,7 +69,7 @@ router.get('/monthly', (req: Request, res: Response) => {
     GROUP BY strftime('%Y-%m', created_at)
     ORDER BY month ASC`).all(twelveMonthsAgo.toISOString().split('T')[0])
 
-    const result = monthlyData.map((row: any[]) => ({
+    const result = monthlyData.map((row: any) => ({
       month: row[0],
       year: Number(row[1]),
       totalSales: Number(row[2]) || 0,
@@ -98,7 +98,7 @@ router.get('/top-products', (req: Request, res: Response) => {
     ORDER BY quantity_sold DESC
     LIMIT 10`).all()
 
-    const result = topProducts.map((row: any[]) => ({
+    const result = topProducts.map((row: any) => ({
       name: row[0],
       barcode: row[1],
       quantity_sold: Number(row[2]) || 0,
@@ -128,7 +128,7 @@ router.get('/top-products/custom', (req: Request, res: Response) => {
     ORDER BY quantity_sold DESC
     LIMIT ?`).all(limit)
 
-    const result = topProducts.map((row: any[]) => ({
+    const result = topProducts.map((row: any) => ({
       name: row[0],
       barcode: row[1],
       quantity_sold: Number(row[2]) || 0,
