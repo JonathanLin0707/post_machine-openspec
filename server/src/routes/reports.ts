@@ -10,7 +10,7 @@ const router = Router()
 router.get('/daily', (req: Request, res: Response) => {
   // Get today's summary
   const today = new Date().toISOString().split('T')[0]
-  
+
   try {
     const todaySummary = db.prepare(`SELECT 
       COUNT(*) as order_count,
@@ -29,7 +29,7 @@ router.get('/daily', (req: Request, res: Response) => {
     // Get last 30 days data for chart
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    
+
     const dailyData = db.prepare(`SELECT 
       DATE(created_at) as date,
       COUNT(*) as order_count,
@@ -40,9 +40,9 @@ router.get('/daily', (req: Request, res: Response) => {
     ORDER BY date ASC`).all(thirtyDaysAgo.toISOString().split('T')[0])
 
     const result = dailyData.map((row: any) => ({
-      date: row[0],
-      orderCount: Number(row[1]) || 0,
-      totalSales: Number(row[2]) || 0
+      date: row.date,
+      orderCount: Number(row.order_count) || 0,
+      totalSales: Number(row.total_sales) || 0
     }))
 
     res.json({ today: todayData, chart: result })
@@ -70,10 +70,10 @@ router.get('/monthly', (req: Request, res: Response) => {
     ORDER BY month ASC`).all(twelveMonthsAgo.toISOString().split('T')[0])
 
     const result = monthlyData.map((row: any) => ({
-      month: row[0],
-      year: Number(row[1]),
-      totalSales: Number(row[2]) || 0,
-      orderCount: Number(row[3]) || 0
+      month: row.month,
+      year: Number(row.year),
+      totalSales: Number(row.total_sales) || 0,
+      orderCount: Number(row.order_count) || 0
     }))
 
     res.json(result)
@@ -89,7 +89,7 @@ router.get('/top-products', (req: Request, res: Response) => {
   try {
     const topProducts = db.prepare(`SELECT 
       p.name,
-      p.barcode,
+      p.id,
       SUM(oi.quantity) as quantity_sold,
       SUM(oi.subtotal) as revenue
     FROM order_items oi
@@ -99,10 +99,10 @@ router.get('/top-products', (req: Request, res: Response) => {
     LIMIT 10`).all()
 
     const result = topProducts.map((row: any) => ({
-      name: row[0],
-      barcode: row[1],
-      quantity_sold: Number(row[2]) || 0,
-      revenue: Number(row[3]) || 0
+      name: row.name,
+      productId: row.id,
+      quantity_sold: Number(row.quantity_sold) || 0,
+      revenue: Number(row.revenue) || 0
     }))
 
     res.json(result)
@@ -115,7 +115,7 @@ router.get('/top-products', (req: Request, res: Response) => {
 // GET /api/reports/top-products?limit=5 - Custom limit for top products
 router.get('/top-products/custom', (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 10
-  
+
   try {
     const topProducts = db.prepare(`SELECT 
       p.name,
@@ -129,10 +129,10 @@ router.get('/top-products/custom', (req: Request, res: Response) => {
     LIMIT ?`).all(limit)
 
     const result = topProducts.map((row: any) => ({
-      name: row[0],
-      barcode: row[1],
-      quantity_sold: Number(row[2]) || 0,
-      revenue: Number(row[3]) || 0
+      name: row.name,
+      barcode: row.barcode,
+      quantity_sold: Number(row.quantity_sold) || 0,
+      revenue: Number(row.revenue) || 0
     }))
 
     res.json(result)

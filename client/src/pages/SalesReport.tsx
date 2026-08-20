@@ -17,6 +17,12 @@ export default function SalesReport() {
     fetchReports()
   }, [])
 
+  const parseNumeric = (value: any): number => {
+    if (value === null || value === undefined || value === '') return 0
+    const num = Number(value)
+    return isNaN(num) ? 0 : num
+  }
+
   const fetchReports = async () => {
     setLoading(true)
     try {
@@ -25,22 +31,34 @@ export default function SalesReport() {
         api.get('/reports/monthly'),
         api.get('/reports/top-products')
       ])
-      
+
       const dailyResponse = dailyRes.data as { today?: any; chart?: DailyReport[] }
-      const dailyData = dailyResponse.chart || [] as DailyReport[]
-      
+      const dailyDataRaw = (dailyResponse.chart || [])
+      const dailyData: DailyReport[] = dailyDataRaw.map(d => ({
+        date: d.date,
+        orderCount: parseNumeric(d.orderCount),
+        totalSales: parseNumeric(d.totalSales),
+        averageOrderValue: 0
+      }))
+
       // Monthly report returns flat array directly
-      const monthlyData = (monthlyRes.data || []) as MonthlyReport[]
-      
-      const topProductsArray = (topRes.data || []) as { name: string; barcode: string; quantitySold: number; revenue: number }[]
-      
+      const monthlyDataRaw = monthlyRes.data || []
+      const monthlyData: MonthlyReport[] = monthlyDataRaw.map(m => ({
+        month: m.month,
+        year: m.year,
+        orderCount: parseNumeric(m.orderCount),
+        totalSales: parseNumeric(m.totalSales)
+      }))
+
+      const topProductsArray = (topRes.data || []) as { name: string; productId: string; quantitySold: number; revenue: number }[]
+
       setDailyData(dailyData)
       setMonthlyData(monthlyData)
       setTopProducts(topProductsArray.map(p => ({
-        productId: p.barcode,
+        productId: p.productId,
         name: p.name,
-        quantitySold: p.quantitySold,
-        revenue: p.revenue
+        quantitySold: parseNumeric(p.quantitySold),
+        revenue: parseNumeric(p.revenue)
       })))
 
       // Calculate today's summary from daily data
@@ -48,10 +66,10 @@ export default function SalesReport() {
       const todaysReport = dailyData.find(r => r.date === today)
       if (todaysReport) {
         setTodaySummary({
-          orderCount: todaysReport.orderCount || 0,
-          totalSales: todaysReport.totalSales || 0,
-          averageOrderValue: todaysReport.orderCount > 0 
-            ? (todaysReport.totalSales || 0) / todaysReport.orderCount 
+          orderCount: parseNumeric(todaysReport.orderCount),
+          totalSales: parseNumeric(todaysReport.totalSales),
+          averageOrderValue: todaysReport.orderCount > 0
+            ? parseNumeric(todaysReport.totalSales) / parseNumeric(todaysReport.orderCount)
             : 0
         })
       } else {
@@ -145,12 +163,12 @@ export default function SalesReport() {
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {monthlyData.map((month) => (
-                  <div key={month.month} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={`${month.month}-${month.year}`} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <span className="text-sm font-medium text-gray-700 w-28">{month.month} {month.year}</span>
                     <span className="text-sm text-gray-600 w-32">{month.orderCount} 筆訂單</span>
                     <div className="flex items-center gap-2">
                       <div className="w-32 bg-blue-200 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="bg-blue-600 h-full transition-all"
                           style={{ width: `${(month.totalSales / Math.max(...monthlyData.map(m => m.totalSales)) * 100)}%` }}
                         />
@@ -173,18 +191,16 @@ export default function SalesReport() {
             ) : (
               <div className="space-y-2">
                 {topProducts.slice(0, 10).map((product, index) => (
-                  <div 
-                    key={product.productId} 
-                    className={`flex items-center justify-between p-3 rounded-lg ${
-                      index < 3 ? 'bg-yellow-50' : 'bg-gray-50'
-                    }`}
+                  <div
+                    key={product.productId}
+                    className={`flex items-center justify-between p-3 rounded-lg ${index < 3 ? 'bg-yellow-50' : 'bg-gray-50'
+                      }`}
                   >
                     <div className="flex items-center gap-4">
-                      <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
-                        index === 0 ? 'bg-yellow-500' : 
-                        index === 1 ? 'bg-gray-400' : 
-                        index === 2 ? 'bg-orange-400' : 'bg-gray-300'
-                      }`}>
+                      <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${index === 0 ? 'bg-yellow-500' :
+                        index === 1 ? 'bg-gray-400' :
+                          index === 2 ? 'bg-orange-400' : 'bg-gray-300'
+                        }`}>
                         {index + 1}
                       </span>
                       <span className="font-medium text-gray-800">{product.name}</span>
