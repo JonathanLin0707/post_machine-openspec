@@ -4,9 +4,12 @@ interface CartItemProps {
   item: CartItemType & { stock?: number }
   onIncrease: (productId: string, currentStock: number) => boolean
   onDecrease: (productId: string) => void
+  onRemove: (productId: string) => void
 }
 
-export default function CartItem({ item, onIncrease, onDecrease }: CartItemProps) {
+export default function CartItem({ item, onIncrease, onDecrease, onRemove }: CartItemProps) {
+  const stock = item.stock ?? 9999
+  
   return (
     <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3 border border-gray-200">
       <div className="flex-1 min-w-0">
@@ -28,12 +31,12 @@ export default function CartItem({ item, onIncrease, onDecrease }: CartItemProps
           </span>
           <button 
             className={`px-3 py-2 font-bold rounded-r-lg ${
-              item.stock - item.quantity <= 0
+              stock - item.quantity <= 0
                 ? 'bg-gray-400 cursor-not-allowed text-gray-500'
                 : 'bg-green-600 hover:bg-green-700 text-white'
             }`}
-            onClick={() => onIncrease(item.productId, item.stock)}
-            disabled={item.stock - item.quantity <= 0}
+            onClick={() => onIncrease(item.productId, stock)}
+            disabled={stock - item.quantity <= 0}
           >
             +
           </button>
@@ -43,17 +46,7 @@ export default function CartItem({ item, onIncrease, onDecrease }: CartItemProps
           <p className="font-bold text-gray-800">${(item.price * item.quantity).toFixed(2)}</p>
           <button 
             className="text-sm text-red-600 hover:text-red-800 underline mt-1"
-            onClick={() => {
-              // Remove item and add back to stock
-              const currentStock = item.stock || 0
-              onDecrease(item.productId)
-              // Simulate adding back to stock (in real app, this would be handled by server)
-              setTimeout(() => {
-                if (item.stock !== undefined) {
-                  item.stock += item.quantity
-                }
-              }, 0)
-            }}
+            onClick={() => onRemove(item.productId)}
           >
             移除
           </button>

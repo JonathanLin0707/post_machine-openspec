@@ -17,7 +17,7 @@ export default function POS({ onCheckout }: POSProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
-  
+
   const cart = useCartStore((state) => state.items)
 
   // Fetch products on mount
@@ -44,27 +44,85 @@ export default function POS({ onCheckout }: POSProps) {
   const handleAddToCart = async (product: Product) => {
     try {
       // Optimistically update local state
-      setProducts(products.map(p => 
-        p.id === product.id 
+      setProducts(products.map(p =>
+        p.id === product.id
           ? { ...p, stock: Math.max(0, p.stock - 1) }
           : p
       ))
-      
+
       // Add to cart store with stock info
       useCartStore.getState().addItem({
         productId: product.id,
         name: product.name,
         price: product.price,
-        quantity: 1,
-        stock: product.stock
+        quantity: 1
       })
     } catch (error) {
       console.error('Failed to add to cart:', error)
       // Revert stock change on error
-      setProducts(products.map(p => 
+      setProducts(products.map(p =>
         p.id === product.id ? { ...p, stock: p.stock + 1 } : p
       ))
     }
+  }
+
+  // Increase quantity with stock check and sync
+  const handleIncreaseQuantity = (productId: string) => {
+    const item = useCartStore.getState().items.find(i => i.productId === productId)
+    const stock = products.find(p =>
+      p.id === productId)?.stock || 0
+
+    if (!stock || stock == 0) {
+      showToast(`庫存不足：${item?.name} 僅剩 ${stock} 件`)
+      return false
+    }
+    useCartStore.getState().increaseQuantity(productId, stock)
+
+    // Sync product list stock
+    setProducts(products.map(p =>
+      p.id === productId ? { ...p, stock: Math.max(0, p.stock - 1) } : p
+    ))
+    return true
+  }
+
+  // Clear cart with stock sync
+  const handleClearCart = () => {
+    const cart = useCartStore.getState()
+    const itemsToRemove = [...cart.items]
+
+    setProducts(products.map(p => {
+      const itemToRemove = itemsToRemove.find(i => i.productId === p.id)
+      if (itemToRemove && itemToRemove.quantity !== undefined) {
+        return { ...p, stock: Math.min(p.stock + itemToRemove.quantity, 9999) }
+      }
+      return p
+    }))
+
+    useCartStore.getState().clearCart()
+  }
+
+  // Remove item from cart with stock sync
+  const handleRemoveItem = (productId: string) => {
+    const cart = useCartStore.getState()
+    const removedItem = cart.items.find(i => i.productId === productId)
+
+    if (removedItem && removedItem.quantity !== undefined) {
+      setProducts(products.map(p =>
+        p.id === productId ? { ...p, stock: Math.min(p.stock + removedItem.quantity, 9999) } : p
+      ))
+    }
+
+    useCartStore.getState().removeItem(productId)
+  }
+
+  // Decrease quantity with stock sync
+  const handleDecreaseQuantity = (productId: string) => {
+    useCartStore.getState().decreaseQuantity(productId)
+
+    // Sync product list stock
+    setProducts(products.map(p =>
+      p.id === productId ? { ...p, stock: Math.max(0, p.stock + 1) } : p
+    ))
   }
 
   // Show toast notification
@@ -73,30 +131,9 @@ export default function POS({ onCheckout }: POSProps) {
     setTimeout(() => setToastMessage(null), 3000)
   }
 
-  // Increase quantity with stock check
-  const handleIncreaseQuantity = (productId: string, currentStock: number) => {
-    const item = useCartStore.getState().items.find(i => i.productId === productId)
-    if (item && item.stock - item.quantity <= 0) {
-      showToast(`庫存不足：${item.name} 僅剩 ${item.stock} 件`)
-      return false
-    }
-    useCartStore.getState().increaseQuantity(productId)
-    return true
-  }
-
-  // Decrease quantity
-  const handleDecreaseQuantity = (productId: string) => {
-    useCartStore.getState().decreaseQuantity(productId)
-  }
-
-  // Clear cart
-  const handleClearCart = () => {
-    useCartStore.getState().clearCart()
-  }
-
   // Filter products by search and category
   const filteredProducts = products.filter(product => {
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       product.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = !selectedCategory || product.category === selectedCategory
     return matchesSearch && matchesCategory
@@ -104,7 +141,7 @@ export default function POS({ onCheckout }: POSProps) {
 
   // Calculate cart totals
   const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0)
-  const tax = subtotal * 0.05
+  const tax = subtotal * 0.00
   const total = subtotal + tax
 
   return (
@@ -156,7 +193,7 @@ export default function POS({ onCheckout }: POSProps) {
           <h2 className="text-xl font-bold text-gray-800 mb-4 sticky top-0 bg-white pb-2 border-b">
             購物車
           </h2>
-          
+
           {cart.length === 0 ? (
             <div className="text-center text-gray-500 py-10">
               <p className="text-xl">購物車是空的</p>
@@ -166,9 +203,10 @@ export default function POS({ onCheckout }: POSProps) {
             cart.map(item => (
               <CartItem
                 key={item.productId}
-                item={{ ...item, stock: Math.max(0, item.stock) }}
-                onIncrease={(productId, currentStock) => handleIncreaseQuantity(productId, currentStock)}
+                item={{ ...item, stock: Math.max(0, item.stock ?? 9999) }}
+                onIncrease={(productId) => handleIncreaseQuantity(productId)}
                 onDecrease={handleDecreaseQuantity}
+                onRemove={handleRemoveItem}
               />
             ))
           )}
@@ -177,14 +215,14 @@ export default function POS({ onCheckout }: POSProps) {
         {/* Checkout Section */}
         <div className="border-t p-4 bg-gray-50">
           <h2 className="text-xl font-bold text-gray-800 mb-4">結帳</h2>
-          
+
           <div className="space-y-2 mb-4 text-lg">
             <div className="flex justify-between">
               <span>小計:</span>
               <span>${subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-gray-600">
-              <span>稅金 (5%):</span>
+              <span>稅金 (0%):</span>
               <span>${tax.toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-bold text-xl pt-2 border-t border-gray-300">
@@ -199,11 +237,10 @@ export default function POS({ onCheckout }: POSProps) {
               {['cash', 'credit_card', 'mobile_payment'].map((method) => (
                 <button
                   key={method}
-                  className={`p-3 rounded-lg font-bold text-lg border-2 transition-all ${
-                    method === 'cash'
-                      ? 'bg-green-100 border-green-500 text-green-800'
-                      : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                  }`}
+                  className={`p-3 rounded-lg font-bold text-lg border-2 transition-all ${method === 'cash'
+                    ? 'bg-green-100 border-green-500 text-green-800'
+                    : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                    }`}
                 >
                   {method === 'cash' ? '現金' : method === 'credit_card' ? '信用卡' : '行動支付'}
                 </button>
@@ -211,20 +248,20 @@ export default function POS({ onCheckout }: POSProps) {
             </div>
           </div>
 
-           <button
-             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl shadow-lg active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-             onClick={() => onCheckout(cart)}
-             disabled={cart.length === 0}
-           >
-             完成結帳
-           </button>
-           
-           <button
-             className="w-full bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md active:scale-95 transition-transform mt-2"
-             onClick={handleClearCart}
-           >
-             清空購物車
-           </button>
+          <button
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl shadow-lg active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => onCheckout(cart)}
+            disabled={cart.length === 0}
+          >
+            完成結帳
+          </button>
+
+          <button
+            className="w-full bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md active:scale-95 transition-transform mt-2"
+            onClick={handleClearCart}
+          >
+            清空購物車
+          </button>
 
         </div>
       </div>

@@ -6,12 +6,12 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
-  const isLowStock = product.stock !== undefined && product.stock <= 5
+  const isLowStock = product.stock !== undefined && product.stock <= 0
   
   return (
     <div className={`rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow cursor-pointer border-2 ${
       isLowStock ? 'border-red-300' : 'border-gray-100 hover:border-blue-500'
-    }`} onClick={() => onAddToCart(product)}>
+    }`}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h3 className="text-xl font-bold text-gray-800 truncate">{product.name}</h3>

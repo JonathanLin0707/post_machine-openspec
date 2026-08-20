@@ -27,7 +27,7 @@ export default function SalesReport() {
       ])
       
       const dailyResponse = dailyRes.data as { today?: any; chart?: DailyReport[] }
-      const dailyData = dailyResponse.chart || []
+      const dailyData = dailyResponse.chart || [] as DailyReport[]
       
       // Monthly report returns flat array directly
       const monthlyData = (monthlyRes.data || []) as MonthlyReport[]

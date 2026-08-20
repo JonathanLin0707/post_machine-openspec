@@ -6,6 +6,7 @@ interface CartItem {
   name: string
   price: number
   quantity: number
+  stock?: number
   subtotal: number
 }
 
@@ -14,9 +15,10 @@ interface CartStore {
   addItem: (item: Omit<CartItem, 'subtotal'>) => void
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, delta: number) => void
-  increaseQuantity: (productId: string) => boolean
+  increaseQuantity: (productId: string, stock?: number) => boolean
   decreaseQuantity: (productId: string) => void
   clearCart: () => void
+  getState: () => { items: CartItem[] }
 }
 
 export const useCartStore = create<CartStore>()(
@@ -50,27 +52,43 @@ export const useCartStore = create<CartStore>()(
         }))
       },
 
-      increaseQuantity: (productId): boolean => {
+      updateQuantity: (productId, delta) => {
+        set((state) => {
+          const item = state.items.find((i) => i.productId === productId)
+          if (!item) return state
+
+          const newQuantity = item.quantity + delta
+          return {
+            items: state.items.map((i) =>
+              i.productId === productId
+                ? { ...i, quantity: newQuantity, subtotal: i.price * newQuantity }
+                : i
+            ),
+          }
+        })
+      },
+
+      increaseQuantity: (productId, stock?): boolean => {
         const item = get().items.find((i) => i.productId === productId)
         if (!item) return false
         
-        // Check if adding 1 more exceeds stock
-        const canAdd = item.quantity < item.stock
-        
-        if (canAdd) {
-          set((state) => {
-            const newQuantity = item.quantity + 1
-            return {
-              items: state.items.map((i) =>
-                i.productId === productId
-                  ? { ...i, quantity: newQuantity, subtotal: i.price * newQuantity }
-                  : i
-              ),
-            }
-          })
+        // Check if adding 1 more exceeds stock if stock is provided
+        if (stock !== undefined && stock == 0) {
+          return false
         }
         
-        return canAdd
+        set((state) => {
+          const newQuantity = item.quantity + 1
+          return {
+            items: state.items.map((i) =>
+              i.productId === productId
+                ? { ...i, quantity: newQuantity, subtotal: i.price * newQuantity }
+                : i
+            ),
+          }
+        })
+        
+        return true
       },
 
       decreaseQuantity: (productId) => {
