@@ -65,7 +65,7 @@ export default function SalesReport() {
         totalSales: parseNumeric(m.totalSales)
       }))
 
-      const topProductsArray = (topRes.data || []) as { name: string; productId: string; quantitySold: number; revenue: number }[]
+      const topProductsArray = (topRes.data || []) as { name: string; productId: string; quantity_sold: number; revenue: number }[]
 
       setDailyData(dailyData)
       setMonthlyData(monthlyData)
@@ -74,7 +74,7 @@ export default function SalesReport() {
       setTopProducts(topProductsArray.map(p => ({
         productId: p.productId,
         name: p.name,
-        quantitySold: parseNumeric(p.quantitySold),
+        quantitySold: parseNumeric(p.quantity_sold),
         revenue: parseNumeric(p.revenue)
       })))
 
