@@ -3,12 +3,13 @@ import ProductCard from '../components/ProductCard'
 import CartItem from '../components/CartItem'
 import CategoryFilter from '../components/CategoryFilter'
 import Toast from '../components/Toast'
+import CheckoutConfirmationDialog from '../components/CheckoutConfirmationDialog/CheckoutConfirmationDialog'
 import { useCartStore } from '../store/CartContext'
 import api from '../services/api'
 import { Product, CartItem as CartItemType } from '../../../shared/types'
 
 interface POSProps {
-  onCheckout: (cartItems: CartItemType[]) => Promise<void>
+  onCheckout: (cartItems: CartItemType[], paymentMethod: string) => Promise<void>
 }
 
 export default function POS({ onCheckout }: POSProps) {
@@ -141,8 +142,39 @@ export default function POS({ onCheckout }: POSProps) {
 
   // Calculate cart totals
   const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0)
-  const tax = subtotal * 0.00
+  const tax = subtotal * 0.1
   const total = subtotal + tax
+
+  // Checkout confirmation dialog state
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null)
+
+  // Handle payment method selection
+  const handleSelectPaymentMethod = (method: string) => {
+    setSelectedPaymentMethod(method)
+  }
+
+  // Open confirmation dialog when checkout button is clicked
+  const handleOpenConfirmationDialog = () => {
+    if (cart.length === 0) {
+      showToast('購物車為空，請先加入商品')
+      return
+    }
+    setShowConfirmationDialog(true)
+  }
+
+  // Handle confirm checkout
+  const handleConfirmCheckout = async (paymentMethod: string) => {
+    await onCheckout(cart, paymentMethod)
+    setShowConfirmationDialog(false)
+    setSelectedPaymentMethod(null)
+    showToast('結帳成功！', 'success')
+  }
+
+  // Handle cancel checkout
+  const handleCancelCheckout = () => {
+    setShowConfirmationDialog(false)
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -231,30 +263,35 @@ export default function POS({ onCheckout }: POSProps) {
             </div>
           </div>
 
-          <div className="space-y-2 mb-4">
-            <label className="block text-sm font-semibold text-gray-700">支付方式:</label>
-            <div className="grid grid-cols-3 gap-2">
-              {['cash', 'credit_card', 'mobile_payment'].map((method) => (
-                <button
-                  key={method}
-                  className={`p-3 rounded-lg font-bold text-lg border-2 transition-all ${method === 'cash'
-                    ? 'bg-green-100 border-green-500 text-green-800'
-                    : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
-                    }`}
-                >
-                  {method === 'cash' ? '現金' : method === 'credit_card' ? '信用卡' : '行動支付'}
-                </button>
-              ))}
-            </div>
-          </div>
+           <div className="space-y-2 mb-4">
+             <label className="block text-sm font-semibold text-gray-700">支付方式:</label>
+             <div className="grid grid-cols-3 gap-2">
+               {['cash', 'credit_card', 'mobile_payment'].map((method) => (
+                 <button
+                   key={method}
+                   onClick={() => handleSelectPaymentMethod(method)}
+                   className={`p-3 rounded-lg font-bold text-lg border-2 transition-all ${selectedPaymentMethod === method
+                     ? method === 'cash'
+                       ? 'bg-green-100 border-green-500 text-green-800'
+                       : method === 'credit_card'
+                       ? 'bg-blue-100 border-blue-500 text-blue-800'
+                       : 'bg-purple-100 border-purple-500 text-purple-800'
+                     : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                     }`}
+                 >
+                   {method === 'cash' ? '現金' : method === 'credit_card' ? '信用卡' : '行動支付'}
+                 </button>
+               ))}
+             </div>
+           </div>
 
-          <button
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl shadow-lg active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => onCheckout(cart)}
-            disabled={cart.length === 0}
-          >
-            完成結帳
-          </button>
+           <button
+             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg text-xl shadow-lg active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+             onClick={handleOpenConfirmationDialog}
+             disabled={cart.length === 0}
+           >
+             結帳
+           </button>
 
           <button
             className="w-full bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md active:scale-95 transition-transform mt-2"
@@ -266,10 +303,23 @@ export default function POS({ onCheckout }: POSProps) {
         </div>
       </div>
 
-      {/* Toast Notification */}
-      {toastMessage && (
-        <Toast message={toastMessage} type="error" onClose={() => setToastMessage(null)} />
-      )}
-    </div>
-  )
-}
+       {/* Toast Notification */}
+       {toastMessage && (
+         <Toast message={toastMessage} type="error" onClose={() => setToastMessage(null)} />
+       )}
+
+       {/* Checkout Confirmation Dialog */}
+       {showConfirmationDialog && (
+         <CheckoutConfirmationDialog
+           cartItems={cart}
+           subtotal={subtotal}
+           taxRate={0.1}
+           total={total}
+           paymentMethod={selectedPaymentMethod}
+           onConfirm={() => handleConfirmCheckout(selectedPaymentMethod || 'cash')}
+           onCancel={handleCancelCheckout}
+         />
+       )}
+     </div>
+   )
+ }
