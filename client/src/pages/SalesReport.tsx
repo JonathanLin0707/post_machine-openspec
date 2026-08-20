@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { DailyReport, MonthlyReport, TopProduct } from '../../../shared/types'
 
+// Helper function for safe nested property access with fallback values
+function safeGet<T>(obj: any, path: string, defaultValue: T): T {
+  return (obj?.[path] ?? defaultValue) as T
+}
+
 export default function SalesReport() {
   const [dailyData, setDailyData] = useState<DailyReport[]>([])
   const [monthlyData, setMonthlyData] = useState<MonthlyReport[]>([])
@@ -17,10 +22,16 @@ export default function SalesReport() {
     fetchReports()
   }, [])
 
-  const parseNumeric = (value: any): number => {
+  // Type conversion logic with fallback to 0 for all numeric displays
+  function parseNumeric(value: any): number {
     if (value === null || value === undefined || value === '') return 0
     const num = Number(value)
     return isNaN(num) ? 0 : num
+  }
+
+  // Null/undefined handling with safeGet helper for nested property access
+  function parseSafeNumeric(obj: any, field: string): number {
+    return parseNumeric(safeGet(obj, field, null))
   }
 
   const fetchReports = async () => {
@@ -34,6 +45,8 @@ export default function SalesReport() {
 
       const dailyResponse = dailyRes.data as { today?: any; chart?: DailyReport[] }
       const dailyDataRaw = (dailyResponse.chart || [])
+      
+      // Handle empty arrays: ensure no React warnings when today has no orders
       const dailyData: DailyReport[] = dailyDataRaw.map(d => ({
         date: d.date,
         orderCount: parseNumeric(d.orderCount),
@@ -43,6 +56,8 @@ export default function SalesReport() {
 
       // Monthly report returns flat array directly
       const monthlyDataRaw = monthlyRes.data || []
+      
+      // Handle empty arrays for monthly data
       const monthlyData: MonthlyReport[] = monthlyDataRaw.map(m => ({
         month: m.month,
         year: m.year,
@@ -54,6 +69,8 @@ export default function SalesReport() {
 
       setDailyData(dailyData)
       setMonthlyData(monthlyData)
+      
+      // Handle empty arrays for top products
       setTopProducts(topProductsArray.map(p => ({
         productId: p.productId,
         name: p.name,
@@ -61,9 +78,10 @@ export default function SalesReport() {
         revenue: parseNumeric(p.revenue)
       })))
 
-      // Calculate today's summary from daily data
+      // Calculate today's summary from daily data with proper null handling
       const today = new Date().toISOString().split('T')[0]
       const todaysReport = dailyData.find(r => r.date === today)
+      
       if (todaysReport) {
         setTodaySummary({
           orderCount: parseNumeric(todaysReport.orderCount),
