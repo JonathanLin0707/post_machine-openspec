@@ -45,7 +45,7 @@ export default function SalesReport() {
 
       const dailyResponse = dailyRes.data as { today?: any; chart?: DailyReport[] }
       const dailyDataRaw = (dailyResponse.chart || [])
-      
+
       // Handle empty arrays: ensure no React warnings when today has no orders
       const dailyData: DailyReport[] = dailyDataRaw.map(d => ({
         date: d.date,
@@ -56,7 +56,7 @@ export default function SalesReport() {
 
       // Monthly report returns flat array directly
       const monthlyDataRaw = monthlyRes.data || []
-      
+
       // Handle empty arrays for monthly data
       const monthlyData: MonthlyReport[] = monthlyDataRaw.map(m => ({
         month: m.month,
@@ -69,7 +69,7 @@ export default function SalesReport() {
 
       setDailyData(dailyData)
       setMonthlyData(monthlyData)
-      
+
       // Handle empty arrays for top products
       setTopProducts(topProductsArray.map(p => ({
         productId: p.productId,
@@ -81,7 +81,7 @@ export default function SalesReport() {
       // Calculate today's summary from daily data with proper null handling
       const today = new Date().toISOString().split('T')[0]
       const todaysReport = dailyData.find(r => r.date === today)
-      
+
       if (todaysReport) {
         setTodaySummary({
           orderCount: parseNumeric(todaysReport.orderCount),
@@ -107,16 +107,22 @@ export default function SalesReport() {
 
   const exportCSV = async () => {
     try {
-      const response = await api.get('/reports/export', { responseType: 'blob' })
-      const url = window.URL.createObjectURL(new Blob([response.data]))
+      setLoading(true)
+      const response = await api.post('/reports/csv-export', null, {
+        responseType: 'blob',
+      })
+      const url = window.URL.createObjectURL(response.data)
       const link = document.createElement('a')
       link.href = url
       link.setAttribute('download', `sales_report_${new Date().toISOString().split('T')[0]}.csv`)
       document.body.appendChild(link)
       link.click()
       link.remove()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to export CSV:', error)
+      alert(error.response?.data?.message || '匯出 CSV 失敗，請稍後再試')
+    } finally {
+      setLoading(false)
     }
   }
 

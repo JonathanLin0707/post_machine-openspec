@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express'
 import { initDatabase, getDb } from '../database.js'
+import { CsvExportService } from '../services/csvExportService.js'
 
 initDatabase()
 const db = getDb()
+const csvExportService = new CsvExportService()
 
 const router = Router()
 
@@ -139,6 +141,32 @@ router.get('/top-products/custom', (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error fetching top products:', error)
     res.status(500).json({ error: 'Failed to fetch top products' })
+  }
+})
+
+// POST /api/reports/csv-export - Generate and download CSV report
+router.post('/csv-export', async (req: Request, res: Response) => {
+  try {
+    // Fetch all data needed for CSV export
+    const data = await csvExportService.fetchAllData()
+
+    // Format as CSV with UTF-8 encoding (no BOM)
+    const csvContent = csvExportService.formatAsCSV(data)
+
+    // Set headers for file download
+    const today = new Date().toISOString().split('T')[0]
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="sales_report_${today}.csv"`)
+    res.setHeader('Cache-Control', 'no-cache')
+
+    // Send CSV content
+    res.send(csvContent)
+  } catch (error: any) {
+    console.error('Error generating CSV export:', error)
+    res.status(500).json({ 
+      error: 'Failed to generate CSV export',
+      message: error.message || 'Internal server error'
+    })
   }
 })
 
