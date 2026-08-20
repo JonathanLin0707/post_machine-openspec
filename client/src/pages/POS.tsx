@@ -142,8 +142,7 @@ export default function POS({ onCheckout }: POSProps) {
 
   // Calculate cart totals
   const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0)
-  const tax = subtotal * 0.1
-  const total = subtotal + tax
+  const total = subtotal
 
   // Checkout confirmation dialog state
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
@@ -253,10 +252,6 @@ export default function POS({ onCheckout }: POSProps) {
               <span>小計:</span>
               <span>${subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-gray-600">
-              <span>稅金 (0%):</span>
-              <span>${tax.toFixed(2)}</span>
-            </div>
             <div className="flex justify-between font-bold text-xl pt-2 border-t border-gray-300">
               <span>總計:</span>
               <span className="text-blue-600">${total.toFixed(2)}</span>
@@ -313,7 +308,6 @@ export default function POS({ onCheckout }: POSProps) {
          <CheckoutConfirmationDialog
            cartItems={cart}
            subtotal={subtotal}
-           taxRate={0.1}
            total={total}
            paymentMethod={selectedPaymentMethod}
            onConfirm={() => handleConfirmCheckout(selectedPaymentMethod || 'cash')}

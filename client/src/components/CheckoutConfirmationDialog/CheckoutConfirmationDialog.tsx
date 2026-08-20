@@ -4,7 +4,6 @@ import { CartItem } from '../../../shared/types'
 interface CheckoutConfirmationDialogProps {
   cartItems: CartItem[]
   subtotal: number
-  taxRate: number
   total: number
   paymentMethod: string | null
   onConfirm: () => void
@@ -14,7 +13,6 @@ interface CheckoutConfirmationDialogProps {
 export default function CheckoutConfirmationDialog({
   cartItems,
   subtotal,
-  taxRate,
   total,
   paymentMethod,
   onConfirm,
@@ -67,10 +65,6 @@ export default function CheckoutConfirmationDialog({
             <div className="flex justify-between text-gray-600">
               <span>小計</span>
               <span>{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-gray-600">
-              <span>稅金 ({(taxRate * 100).toFixed(0)}%)</span>
-              <span>{formatCurrency(subtotal * taxRate)}</span>
             </div>
             <div className="flex justify-between font-bold text-xl pt-2 border-t border-gray-300">
               <span className="text-blue-600">總計</span>
