@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CartItem } from '../../../shared/types'
+import type { CartItem } from 'shared/types'
 
 interface CheckoutConfirmationDialogProps {
   cartItems: CartItem[]

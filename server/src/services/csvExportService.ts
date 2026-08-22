@@ -1,5 +1,9 @@
 import { getDb } from '../database.js'
-import type { DailyReport, MonthlyReport, TopProduct } from '../../../shared/types.js'
+import type {
+  DailyReport,
+  MonthlyReport,
+  TopProduct
+} from 'shared'
 
 export class CsvExportService {
   private db: any

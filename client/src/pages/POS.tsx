@@ -167,7 +167,7 @@ export default function POS({ onCheckout }: POSProps) {
     await onCheckout(cart, paymentMethod)
     setShowConfirmationDialog(false)
     setSelectedPaymentMethod(null)
-    showToast('結帳成功！', 'success')
+    showToast('結帳成功！')
   }
 
   // Handle cancel checkout

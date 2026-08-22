@@ -2,11 +2,6 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { DailyReport, MonthlyReport, TopProduct } from '../../../shared/types'
 
-// Helper function for safe nested property access with fallback values
-function safeGet<T>(obj: any, path: string, defaultValue: T): T {
-  return (obj?.[path] ?? defaultValue) as T
-}
-
 export default function SalesReport() {
   const [dailyData, setDailyData] = useState<DailyReport[]>([])
   const [monthlyData, setMonthlyData] = useState<MonthlyReport[]>([])
@@ -27,11 +22,6 @@ export default function SalesReport() {
     if (value === null || value === undefined || value === '') return 0
     const num = Number(value)
     return isNaN(num) ? 0 : num
-  }
-
-  // Null/undefined handling with safeGet helper for nested property access
-  function parseSafeNumeric(obj: any, field: string): number {
-    return parseNumeric(safeGet(obj, field, null))
   }
 
   const fetchReports = async () => {
@@ -58,7 +48,7 @@ export default function SalesReport() {
       const monthlyDataRaw = monthlyRes.data || []
 
       // Handle empty arrays for monthly data
-      const monthlyData: MonthlyReport[] = monthlyDataRaw.map(m => ({
+      const monthlyData: MonthlyReport[] = monthlyDataRaw.map((m: { month: any; year: any; orderCount: any; totalSales: any }) => ({
         month: m.month,
         year: m.year,
         orderCount: parseNumeric(m.orderCount),
