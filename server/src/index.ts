@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import productsRoutes from './routes/products.js'
 import ordersRoutes from './routes/orders.js'
 import reportsRoutes from './routes/reports.js'
+import databaseRoutes from './routes/database.js'
 import { initDatabase } from './database.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -30,6 +31,7 @@ const db = initDatabase()
 app.use('/api/products', productsRoutes)
 app.use('/api/orders', ordersRoutes)
 app.use('/api/reports', reportsRoutes)
+app.use('/api/database', databaseRoutes)
 
 // Health check
 app.get('/health', (req, res) => {
