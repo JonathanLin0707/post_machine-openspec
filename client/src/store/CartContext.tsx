@@ -118,4 +118,4 @@ export const useCartStore = create<CartStore>()(
   )
 )
 
-export default useCartStore as any
+export default useCartStore as CartStore
