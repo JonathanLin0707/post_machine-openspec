@@ -20,6 +20,16 @@ interface Order {
   items_json: OrderItem[]
 }
 
+interface ApiResponseOrder {
+  id: number
+  total: number
+  tax: number
+  payment_method: string
+  status: string
+  created_at: string
+  items_json: string | OrderItem[]
+}
+
 export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(false)
@@ -35,7 +45,7 @@ export default function Orders() {
     try {
       const response = await api.get('/orders')
       // 解析 items_json 字串為陣列
-      const parsedOrders = response.data.map((order: any) => ({
+      const parsedOrders = response.data.map((order: ApiResponseOrder) => ({
         ...order,
         items_json: typeof order.items_json === 'string' 
           ? JSON.parse(order.items_json) 
