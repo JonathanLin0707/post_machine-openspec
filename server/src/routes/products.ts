@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express'
 import { initDatabase, getDb } from '../database.js'
+import { Product } from '../../shared/types.js'
 
 initDatabase()
 const db = getDb()
@@ -19,18 +20,18 @@ const deleteProduct = db.prepare('DELETE FROM products WHERE id = ?')
 // GET /api/products - Get all products with search and filter
 router.get('/', (req: Request, res: Response) => {
   const { search, category } = req.query
-  let products: any[] = []
+  const products: Product[] = []
 
   try {
-    const rows = getAllProducts.all() as any[]
+    const rows = getAllProducts.all() as Product[]
     rows.forEach((row) => {
       products.push({
-        id: row.id,
+        id: String(row.id),
         name: row.name,
-        price: row.price,
-        barcode: row.barcode,
-        category: row.category,
-        stock: row.stock,
+        price: Number(row.price),
+        barcode: row.barcode || null,
+        category: row.category || null,
+        stock: Number(row.stock),
         image_url: row.image_url || null,
         created_at: row.created_at || null,
         updated_at: row.updated_at || null
@@ -40,10 +41,9 @@ router.get('/', (req: Request, res: Response) => {
     console.error('Error fetching products:', error)
   }
 
-  let filtered = products
+  const filtered = products
 
   if (search) {
-    const searchPattern = `%${String(search)}%`
     filtered = filtered.filter(
       (p) =>
         p.name.toLowerCase().includes(String(search).toLowerCase()) ||
@@ -61,17 +61,17 @@ router.get('/', (req: Request, res: Response) => {
 // GET /api/products/:id - Get single product
 router.get('/:id', (req: Request, res: Response) => {
   try {
-    const row = getProductById.get([req.params.id]) as any
+    const row = getProductById.get([req.params.id]) as Product
     if (!row) {
       return res.status(404).json({ error: 'Product not found' })
     }
     res.json({
-      id: row.id,
+      id: String(row.id),
       name: row.name,
-      price: row.price,
-      barcode: row.barcode,
-      category: row.category,
-      stock: row.stock,
+      price: Number(row.price),
+      barcode: row.barcode || null,
+      category: row.category || null,
+      stock: Number(row.stock),
       image_url: row.image_url || null,
       created_at: row.created_at || null,
       updated_at: row.updated_at || null
@@ -91,34 +91,34 @@ router.post('/', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Name and price are required' })
   }
 
-  if (price <= 0) {
+  if (Number(price) <= 0) {
     return res.status(400).json({ error: 'Price must be greater than 0' })
   }
 
   try {
-    const insertResult = createProduct.run(name, price, barcode || null, category || null, stock || 0, image_url || null)
+    const insertResult = createProduct.run(name, Number(price), barcode || null, category || null, stock || 0, image_url || null)
     
     // Get the newly created product
-    const id = Number(insertResult.lastInsertRowid)
-    const row = getProductById.get([id]) as any
+    const id = String(insertResult.lastInsertRowid)
+    const row = getProductById.get([id]) as Product
     
     if (!row) {
       return res.status(500).json({ error: 'Failed to create product' })
     }
 
     res.status(201).json({
-      id: row.id,
+      id: String(row.id),
       name: row.name,
-      price: row.price,
-      barcode: row.barcode,
-      category: row.category,
-      stock: row.stock,
+      price: Number(row.price),
+      barcode: row.barcode || null,
+      category: row.category || null,
+      stock: Number(row.stock),
       image_url: row.image_url || null,
       created_at: row.created_at || null,
       updated_at: row.updated_at || null
     })
-  } catch (error: any) {
-    if (error.message.includes('UNIQUE constraint failed')) {
+  } catch (error) {
+    if ((error as any).message.includes('UNIQUE constraint failed')) {
       return res.status(409).json({ error: 'Product name or barcode already exists' })
     }
     res.status(500).json({ error: 'Failed to create product' })
@@ -129,35 +129,35 @@ router.post('/', (req: Request, res: Response) => {
 router.post('/cart', (req: Request, res: Response) => {
   const { productId, quantity } = req.body
 
-  if (!productId || !quantity || quantity <= 0) {
+  if (!productId || !quantity || Number(quantity) <= 0) {
     return res.status(400).json({ error: 'Product ID and positive quantity are required' })
   }
 
   try {
-    const updateResult = updateProduct.run(quantity, productId, quantity)
+    const updateResult = updateProduct.run(Number(quantity), productId, Number(quantity))
     
     if (updateResult.changes === 0) {
       return res.status(400).json({ error: 'Insufficient stock' })
     }
 
-    const row = getProductById.get([productId]) as any
+    const row = getProductById.get([productId]) as Product
     if (!row) {
       return res.status(500).json({ error: 'Failed to update stock' })
     }
 
     res.json({
-      id: row.id,
+      id: String(row.id),
       name: row.name,
-      price: row.price,
-      barcode: row.barcode,
-      category: row.category,
-      stock: row.stock,
+      price: Number(row.price),
+      barcode: row.barcode || null,
+      category: row.category || null,
+      stock: Number(row.stock),
       image_url: row.image_url || null,
       created_at: row.created_at || null,
       updated_at: row.updated_at || null
     })
-  } catch (error: any) {
-    if (error.message.includes('FOREIGN KEY constraint failed')) {
+  } catch (error) {
+    if ((error as any).message.includes('FOREIGN KEY constraint failed')) {
       return res.status(404).json({ error: 'Product not found' })
     }
     res.status(500).json({ error: 'Failed to update stock' })
@@ -170,7 +170,7 @@ router.put('/:id', (req: Request, res: Response) => {
 
   // Check if product exists
   try {
-    const row = getProductById.get([req.params.id]) as any
+    const row = getProductById.get([req.params.id]) as Product
     if (!row) {
       return res.status(404).json({ error: 'Product not found' })
     }
@@ -179,7 +179,7 @@ router.put('/:id', (req: Request, res: Response) => {
 
     // Validation for name uniqueness (excluding current product)
     if (name && name !== existing.name) {
-      const duplicateRow = db.prepare('SELECT * FROM products WHERE name = ? AND id != ?').get(name, req.params.id) as any
+      const duplicateRow = db.prepare('SELECT * FROM products WHERE name = ? AND id != ?').get(name, req.params.id) as Product
       if (duplicateRow) {
         return res.status(409).json({ error: 'Product name already exists' })
       }
@@ -187,13 +187,13 @@ router.put('/:id', (req: Request, res: Response) => {
 
     // Validation for barcode uniqueness (excluding current product)
     if (barcode && barcode !== existing.barcode) {
-      const duplicateRow = db.prepare('SELECT * FROM products WHERE barcode = ? AND id != ?').get(barcode, req.params.id) as any
+      const duplicateRow = db.prepare('SELECT * FROM products WHERE barcode = ? AND id != ?').get(barcode, req.params.id) as Product
       if (duplicateRow) {
         return res.status(409).json({ error: 'Barcode already exists' })
       }
     }
 
-    if (price && price <= 0) {
+    if (price && Number(price) <= 0) {
       return res.status(400).json({ error: 'Price must be greater than 0' })
     }
 
@@ -216,18 +216,18 @@ router.put('/:id', (req: Request, res: Response) => {
       req.params.id
     )
 
-    const updatedRow = getProductById.get([req.params.id]) as any
+    const updatedRow = getProductById.get([req.params.id]) as Product
     if (!updatedRow) {
       return res.status(500).json({ error: 'Failed to update product' })
     }
 
     res.json({
-      id: updatedRow.id,
+      id: String(updatedRow.id),
       name: updatedRow.name,
-      price: updatedRow.price,
-      barcode: updatedRow.barcode,
-      category: updatedRow.category,
-      stock: updatedRow.stock,
+      price: Number(updatedRow.price),
+      barcode: updatedRow.barcode || null,
+      category: updatedRow.category || null,
+      stock: Number(updatedRow.stock),
       image_url: updatedRow.image_url || null,
       created_at: updatedRow.created_at || null,
       updated_at: updatedRow.updated_at || null
@@ -241,7 +241,7 @@ router.put('/:id', (req: Request, res: Response) => {
 // DELETE /api/products/:id - Delete product
 router.delete('/:id', (req: Request, res: Response) => {
   try {
-    const row = getProductById.get([req.params.id]) as any
+    const row = getProductById.get([req.params.id]) as Product
     if (!row) {
       return res.status(404).json({ error: 'Product not found' })
     }
