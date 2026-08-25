@@ -6,9 +6,10 @@ import SalesReport from './pages/SalesReport'
 import Orders from './pages/Orders'
 import { useCartStore } from './store/CartContext'
 import api from './services/api'
+import { CartItem } from 'shared'
 
 function App() {
-  const handleCheckout = async (cartItems: any[]) => {
+  const handleCheckout = async (cartItems: CartItem[]) => {
     try {
       console.log('Starting checkout with items:', cartItems)
       
@@ -27,7 +28,7 @@ function App() {
       useCartStore.getState().clearCart()
 
       console.log('Checkout successful')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to checkout:', error.response?.data || error.message)
       throw error
     }
