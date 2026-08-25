@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 describe('SalesReport Data Parsing', () => {
   // Test parseNumeric function
   it('should handle null values', () => {
-    const parseNumeric = (value: any): number => {
+    const parseNumeric = (value: unknown): number => {
       if (value === null || value === undefined || value === '') return 0
       const num = Number(value)
       return isNaN(num) ? 0 : num
@@ -13,7 +13,7 @@ describe('SalesReport Data Parsing', () => {
   })
 
   it('should handle undefined values', () => {
-    const parseNumeric = (value: any): number => {
+    const parseNumeric = (value: unknown): number => {
       if (value === null || value === undefined || value === '') return 0
       const num = Number(value)
       return isNaN(num) ? 0 : num
@@ -23,7 +23,7 @@ describe('SalesReport Data Parsing', () => {
   })
 
   it('should handle empty string values', () => {
-    const parseNumeric = (value: any): number => {
+    const parseNumeric = (value: unknown): number => {
       if (value === null || value === undefined || value === '') return 0
       const num = Number(value)
       return isNaN(num) ? 0 : num
@@ -33,7 +33,7 @@ describe('SalesReport Data Parsing', () => {
   })
 
   it('should handle string numbers', () => {
-    const parseNumeric = (value: any): number => {
+    const parseNumeric = (value: unknown): number => {
       if (value === null || value === undefined || value === '') return 0
       const num = Number(value)
       return isNaN(num) ? 0 : num
@@ -44,7 +44,7 @@ describe('SalesReport Data Parsing', () => {
   })
 
   it('should handle actual numbers', () => {
-    const parseNumeric = (value: any): number => {
+    const parseNumeric = (value: unknown): number => {
       if (value === null || value === undefined || value === '') return 0
       const num = Number(value)
       return isNaN(num) ? 0 : num
@@ -55,7 +55,7 @@ describe('SalesReport Data Parsing', () => {
   })
 
   it('should handle invalid numbers', () => {
-    const parseNumeric = (value: any): number => {
+    const parseNumeric = (value: unknown): number => {
       if (value === null || value === undefined || value === '') return 0
       const num = Number(value)
       return isNaN(num) ? 0 : num
@@ -66,7 +66,7 @@ describe('SalesReport Data Parsing', () => {
   })
 
   it('should handle zero values', () => {
-    const parseNumeric = (value: any): number => {
+    const parseNumeric = (value: unknown): number => {
       if (value === null || value === undefined || value === '') return 0
       const num = Number(value)
       return isNaN(num) ? 0 : num
