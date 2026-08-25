@@ -6,3 +6,5 @@ server/data/grocery.db-wal
 .code-graph/
 .memory/
 .aider*
+client/dist/
+server/dist/
