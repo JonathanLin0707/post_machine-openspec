@@ -31,7 +31,7 @@ export class CsvExportService {
     FROM orders
     WHERE DATE(created_at) = ?`).get(today)
 
-    const todayData: any = {}
+    const todayData: Record<string, unknown> = {}
     if (todaySummary) {
       todayData.orderCount = Number((todaySummary as Record<string, unknown>)['order_count']) || 0
       todayData.totalSales = Number((todaySummary as Record<string, unknown>)['total_sales']) || 0
@@ -51,7 +51,7 @@ export class CsvExportService {
     GROUP BY DATE(created_at)
     ORDER BY date ASC`).all(thirtyDaysAgo.toISOString().split('T')[0])
 
-    const dailyData: DailyReport[] = dailyDataRaw.map((row: any) => ({
+    const dailyData: DailyReport[] = dailyDataRaw.map((row: Record<string, unknown>) => ({
       date: row.date,
       orderCount: Number(row.order_count) || 0,
       totalSales: Number(row.total_sales) || 0
@@ -71,7 +71,7 @@ export class CsvExportService {
     GROUP BY strftime('%Y-%m', created_at)
     ORDER BY month ASC`).all(twelveMonthsAgo.toISOString().split('T')[0])
 
-    const monthlyData: MonthlyReport[] = monthlyDataRaw.map((row: any) => ({
+    const monthlyData: MonthlyReport[] = monthlyDataRaw.map((row: Record<string, unknown>) => ({
       month: row.month,
       year: Number(row.year),
       totalSales: Number(row.total_sales) || 0,
@@ -90,7 +90,7 @@ export class CsvExportService {
     ORDER BY quantity_sold DESC
     LIMIT 10`).all()
 
-    const topProducts: TopProduct[] = topProductsRaw.map((row: any) => ({
+    const topProducts: TopProduct[] = topProductsRaw.map((row: Record<string, unknown>) => ({
       name: row.name,
       productId: row.id,
       quantitySold: Number(row.quantity_sold) || 0,
