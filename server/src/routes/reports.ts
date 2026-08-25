@@ -21,7 +21,7 @@ router.get('/daily', (req: Request, res: Response) => {
     FROM orders
     WHERE DATE(created_at) = ?`).get(today)
 
-    const todayData: any = {}
+    const todayData: Record<string, unknown> = {}
     if (todaySummary) {
       todayData.order_count = Number((todaySummary as Record<string, unknown>)['order_count']) || 0
       todayData.total_sales = Number((todaySummary as Record<string, unknown>)['total_sales']) || 0
@@ -41,7 +41,7 @@ router.get('/daily', (req: Request, res: Response) => {
     GROUP BY DATE(created_at)
     ORDER BY date ASC`).all(thirtyDaysAgo.toISOString().split('T')[0])
 
-    const result = dailyData.map((row: any) => ({
+    const result = dailyData.map((row: Record<string, unknown>) => ({
       date: row.date,
       orderCount: Number(row.order_count) || 0,
       totalSales: Number(row.total_sales) || 0
@@ -71,7 +71,7 @@ router.get('/monthly', (req: Request, res: Response) => {
     GROUP BY strftime('%Y-%m', created_at)
     ORDER BY month ASC`).all(twelveMonthsAgo.toISOString().split('T')[0])
 
-    const result = monthlyData.map((row: any) => ({
+    const result = monthlyData.map((row: Record<string, unknown>) => ({
       month: row.month,
       year: Number(row.year),
       totalSales: Number(row.total_sales) || 0,
@@ -100,7 +100,7 @@ router.get('/top-products', (req: Request, res: Response) => {
     ORDER BY quantity_sold DESC
     LIMIT 10`).all()
 
-    const result = topProducts.map((row: any) => ({
+    const result = topProducts.map((row: Record<string, unknown>) => ({
       name: row.name,
       productId: row.id,
       quantity_sold: Number(row.quantity_sold) || 0,
@@ -130,7 +130,7 @@ router.get('/top-products/custom', (req: Request, res: Response) => {
     ORDER BY quantity_sold DESC
     LIMIT ?`).all(limit)
 
-    const result = topProducts.map((row: any) => ({
+    const result = topProducts.map((row: Record<string, unknown>) => ({
       name: row.name,
       barcode: row.barcode,
       quantity_sold: Number(row.quantity_sold) || 0,
@@ -161,11 +161,11 @@ router.post('/csv-export', async (req: Request, res: Response) => {
 
     // Send CSV content
     res.send(csvContent)
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error generating CSV export:', error)
     res.status(500).json({ 
       error: 'Failed to generate CSV export',
-      message: error.message || 'Internal server error'
+      message: (error as Error).message || 'Internal server error'
     })
   }
 })
