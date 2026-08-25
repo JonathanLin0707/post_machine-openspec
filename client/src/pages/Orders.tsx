@@ -44,8 +44,13 @@ export default function Orders() {
 
   const filteredOrders = orders.filter(order => {
     const orderId = order.id || 0
+    // 解析 items_json 字串為陣列
+    const itemsArray = typeof order.items_json === 'string' 
+      ? JSON.parse(order.items_json) 
+      : order.items_json || []
+    
     const matchesSearch = orderId.toString().includes(searchQuery) ||
-      (order.items_json && order.items_json.some(item => item.name?.toLowerCase().includes(searchQuery.toLowerCase())))
+      (itemsArray && itemsArray.some(item => item.name?.toLowerCase().includes(searchQuery.toLowerCase())))
     const matchesStatus = filterStatus ? order.status === filterStatus : true
     return matchesSearch && matchesStatus
   })
@@ -131,7 +136,11 @@ export default function Orders() {
                       <td className="px-4 py-3 text-sm">
                         <button
                           onClick={() => {
-                            const item = order.items_json?.[0]
+                            // 解析 items_json 字串為陣列
+                            const itemsArray = typeof order.items_json === 'string' 
+                              ? JSON.parse(order.items_json) 
+                              : order.items_json || []
+                            const item = itemsArray?.[0]
                             if (item) {
                               window.open(`/products?id=${item.productId}`, '_blank')
                             }
