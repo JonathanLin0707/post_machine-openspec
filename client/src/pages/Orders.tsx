@@ -43,8 +43,9 @@ export default function Orders() {
   }
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.id.toString().includes(searchQuery) ||
-      order.items_json.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    const orderId = order.id || 0
+    const matchesSearch = orderId.toString().includes(searchQuery) ||
+      (order.items_json && order.items_json.some(item => item.name?.toLowerCase().includes(searchQuery.toLowerCase())))
     const matchesStatus = filterStatus ? order.status === filterStatus : true
     return matchesSearch && matchesStatus
   })
@@ -109,28 +110,28 @@ export default function Orders() {
                 <tbody className="divide-y divide-gray-200">
                   {filteredOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">#{order.id}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">#{order.id || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {new Date(order.created_at).toLocaleDateString('zh-TW')}
+                        {order.created_at ? new Date(order.created_at).toLocaleDateString('zh-TW') : 'N/A'}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{order.payment_method}</td>
-                      <td className="px-4 py-3 text-sm font-bold text-gray-900">{formatCurrency(order.total)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{order.payment_method || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm font-bold text-gray-900">{formatCurrency(order.total || 0)}</td>
                       <td className="px-4 py-3 text-sm">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           order.status === 'completed' ? 'bg-green-100 text-green-800' :
                           order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-red-100 text-red-800'
                         }`}>
-                          {order.status}
+                          {order.status || 'N/A'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {order.items_json.length} 件
+                        {order.items_json?.length || 0} 件
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <button
                           onClick={() => {
-                            const item = order.items_json[0]
+                            const item = order.items_json?.[0]
                             if (item) {
                               window.open(`/products?id=${item.productId}`, '_blank')
                             }
