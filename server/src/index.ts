@@ -25,7 +25,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 // Initialize database before setting up routes
-const db = initDatabase()
+initDatabase()
 
 // Routes
 app.use('/api/products', productsRoutes)
@@ -47,7 +47,7 @@ app.get('*', (req, res) => {
 })
 
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Error:', err.message)
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
