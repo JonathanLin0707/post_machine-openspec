@@ -34,7 +34,14 @@ export default function Orders() {
     setLoading(true)
     try {
       const response = await api.get('/orders')
-      setOrders(response.data)
+      // 解析 items_json 字串為陣列
+      const parsedOrders = response.data.map((order: any) => ({
+        ...order,
+        items_json: typeof order.items_json === 'string' 
+          ? JSON.parse(order.items_json) 
+          : order.items_json || []
+      }))
+      setOrders(parsedOrders)
     } catch (error) {
       console.error('Failed to fetch orders:', error)
     } finally {
@@ -44,13 +51,10 @@ export default function Orders() {
 
   const filteredOrders = orders.filter(order => {
     const orderId = order.id || 0
-    // 解析 items_json 字串為陣列
-    const itemsArray = typeof order.items_json === 'string' 
-      ? JSON.parse(order.items_json) 
-      : order.items_json || []
+    const itemsArray = order.items_json || []
     
     const matchesSearch = orderId.toString().includes(searchQuery) ||
-      (itemsArray && itemsArray.some(item => item.name?.toLowerCase().includes(searchQuery.toLowerCase())))
+      itemsArray.some(item => item.name?.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesStatus = filterStatus ? order.status === filterStatus : true
     return matchesSearch && matchesStatus
   })
@@ -136,11 +140,7 @@ export default function Orders() {
                       <td className="px-4 py-3 text-sm">
                         <button
                           onClick={() => {
-                            // 解析 items_json 字串為陣列
-                            const itemsArray = typeof order.items_json === 'string' 
-                              ? JSON.parse(order.items_json) 
-                              : order.items_json || []
-                            const item = itemsArray?.[0]
+                            const item = order.items_json?.[0]
                             if (item) {
                               window.open(`/products?id=${item.productId}`, '_blank')
                             }
