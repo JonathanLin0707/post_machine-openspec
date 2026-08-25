@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import request from 'supertest'
 import app from '../src/index'
-import { initDb, getDb } from '../src/database'
+import { initDb } from '../src/database'
 import { seedTestData } from '../src/seedData'
 
 describe('Product API', () => {
-  let db: any
+  let db: Database.Database
 
   beforeAll(async () => {
     // Initialize database with test data
