@@ -182,6 +182,12 @@ export default function POS({ onCheckout }: POSProps) {
         {/* Search and Filter Header */}
         <div className="bg-white p-4 shadow-sm border-b">
           <div className="flex gap-3 mb-4">
+            <button
+              onClick={() => window.location.href = '/orders'}
+              className="px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100"
+            >
+              📋 查看所有訂單
+            </button>
             <input
               type="text"
               placeholder="搜尋商品名稱或條碼..."

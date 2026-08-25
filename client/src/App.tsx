@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import POS from './pages/POS'
 import ProductManagement from './pages/ProductManagement'
 import SalesReport from './pages/SalesReport'
+import Orders from './pages/Orders'
 import { useCartStore } from './store/CartContext'
 import api from './services/api'
 
@@ -36,7 +37,7 @@ function App() {
     <Layout>
       <Routes>
         <Route path="/" element={<POS onCheckout={handleCheckout} />} />
-        <Route path="/orders" element={<POS onCheckout={handleCheckout} />} />
+        <Route path="/orders" element={<Orders />} />
         <Route path="/products" element={<ProductManagement />} />
         <Route path="/reports" element={<SalesReport />} />
       </Routes>
