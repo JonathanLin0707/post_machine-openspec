@@ -61,14 +61,6 @@ interface Order {
   items_json: OrderItem[]
 }
 
-interface Product {
-  id: number
-  name: string
-  price: number
-  stock: number
-  category: string
-}
-
 interface OrderItemInput {
   productId: string
   quantity: number

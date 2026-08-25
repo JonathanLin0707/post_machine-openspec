@@ -118,7 +118,7 @@ router.post('/', (req: Request, res: Response) => {
       updated_at: row.updated_at || null
     })
   } catch (error) {
-    if ((error as any).message.includes('UNIQUE constraint failed')) {
+    if ((error as { message: string }).message.includes('UNIQUE constraint failed')) {
       return res.status(409).json({ error: 'Product name or barcode already exists' })
     }
     res.status(500).json({ error: 'Failed to create product' })
@@ -157,7 +157,7 @@ router.post('/cart', (req: Request, res: Response) => {
       updated_at: row.updated_at || null
     })
   } catch (error) {
-    if ((error as any).message.includes('FOREIGN KEY constraint failed')) {
+    if ((error as { message: string }).message.includes('FOREIGN KEY constraint failed')) {
       return res.status(404).json({ error: 'Product not found' })
     }
     res.status(500).json({ error: 'Failed to update stock' })
