@@ -42,6 +42,38 @@ const getProductById = db.prepare('SELECT * FROM products WHERE id = ?')
 const createOrder = db.prepare(`INSERT INTO orders (total, tax, payment_method, status) 
                                 VALUES (?, ?, ?, 'completed')`)
 
+interface OrderItem {
+  id: number
+  productId: number
+  name: string
+  quantity: number
+  unitPrice: number
+  subtotal: number
+}
+
+interface Order {
+  id: number
+  total: number
+  tax: number
+  payment_method: string
+  status: string
+  created_at: string
+  items_json: OrderItem[]
+}
+
+interface Product {
+  id: number
+  name: string
+  price: number
+  stock: number
+  category: string
+}
+
+interface OrderItemInput {
+  productId: string
+  quantity: number
+}
+
 const router = Router()
 
 // POST /api/orders - Create new order
@@ -58,7 +90,7 @@ router.post('/', (req: Request, res: Response) => {
 
   // Validate and deduct stock for each item
   let total = 0
-  const orderItems: any[] = []
+  const orderItems: OrderItem[] = []
 
   for (const item of items) {
     try {
@@ -142,9 +174,9 @@ router.post('/', (req: Request, res: Response) => {
 router.get('/', (req: Request, res: Response) => {
   try {
     const rows = getAllOrdersWithItems.all()
-    const orders: any[] = []
+    const orders: Order[] = []
     
-    rows.forEach((row: any) => {
+    rows.forEach((row: Record<string, unknown>) => {
       orders.push({
         id: Number(row[0]),
         total: Number(row[1]),
