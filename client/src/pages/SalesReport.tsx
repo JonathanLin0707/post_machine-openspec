@@ -18,7 +18,7 @@ export default function SalesReport() {
   }, [])
 
   // Type conversion logic with fallback to 0 for all numeric displays
-  function parseNumeric(value: any): number {
+  function parseNumeric(value: unknown): number {
     if (value === null || value === undefined || value === '') return 0
     const num = Number(value)
     return isNaN(num) ? 0 : num
@@ -33,7 +33,7 @@ export default function SalesReport() {
         api.get('/reports/top-products')
       ])
 
-      const dailyResponse = dailyRes.data as { today?: any; chart?: DailyReport[] }
+      const dailyResponse = dailyRes.data as { today?: { orderCount?: number; totalSales?: number; averageOrderValue?: number }; chart?: DailyReport[] }
       const dailyDataRaw = (dailyResponse.chart || [])
 
       // Handle empty arrays: ensure no React warnings when today has no orders
@@ -48,7 +48,7 @@ export default function SalesReport() {
       const monthlyDataRaw = monthlyRes.data || []
 
       // Handle empty arrays for monthly data
-      const monthlyData: MonthlyReport[] = monthlyDataRaw.map((m: { month: any; year: any; orderCount: any; totalSales: any }) => ({
+      const monthlyData: MonthlyReport[] = monthlyDataRaw.map((m: { month: string; year: number; orderCount: string | number; totalSales: string | number }) => ({
         month: m.month,
         year: m.year,
         orderCount: parseNumeric(m.orderCount),
@@ -108,9 +108,9 @@ export default function SalesReport() {
       document.body.appendChild(link)
       link.click()
       link.remove()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to export CSV:', error)
-      alert(error.response?.data?.message || '匯出 CSV 失敗，請稍後再試')
+      alert((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '匯出 CSV 失敗，請稍後再試')
     } finally {
       setLoading(false)
     }
