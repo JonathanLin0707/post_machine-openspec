@@ -61,10 +61,7 @@ interface Order {
   items_json: OrderItem[]
 }
 
-interface OrderItemInput {
-  productId: string
-  quantity: number
-}
+// Removed unused OrderItemInput interface
 
 const router = Router()
 
