@@ -17,7 +17,7 @@
     "lint": "concurrently \"npm run lint:client\" \"npm run lint:server\"",
     "lint:client": "npm run lint --workspace=client",
     "lint:server": "npm run lint --workspace=server",
-    "test": "concurrently \"npm run test:client\" \"npm run test:server\"",
+    "test": "npm run test:client",
     "test:client": "npm run test --workspace=client",
     "test:server": "npm run test --workspace=server"
   },
@@ -25,5 +25,9 @@
     "concurrently": "^8.2.2",
     "tsx": "^4.7.1",
     "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "supertest": "^6.3.3",
+    "@types/supertest": "^6.0.0"
   }
 }

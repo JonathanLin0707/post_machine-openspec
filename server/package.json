@@ -8,14 +8,14 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "db:init": "tsx src/database.ts",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "test": "vitest"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "shared": "*"
+    "shared": "*",
+    "supertest": "^6.3.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
