@@ -1,9 +1,9 @@
 import { getDb } from '../database.js'
 import { Database } from 'better-sqlite3'
-import { DailyReport, MonthlyReport, TopProduct } from '../../shared/types.js'
+import { DailyReport, MonthlyReport, TopProduct } from 'shared'
 
 export class CsvExportService {
-  private db: Database.Database
+  private db: Database
 
   constructor() {
     this.db = getDb()
@@ -19,6 +19,12 @@ export class CsvExportService {
     todaySummary: { orderCount: number; totalSales: number; averageOrderValue: number }
   }> {
     // Fetch daily reports
+    interface DailyRow {
+      date: string
+      orderCount: number
+      totalSales: number
+      averageOrderValue: number
+    }
     const dailyQuery = `
       SELECT 
         date(created_at) as date,
@@ -29,15 +35,21 @@ export class CsvExportService {
       GROUP BY date(created_at)
       ORDER BY date ASC
     `
-    const dailyRows = this.db.prepare(dailyQuery).all() as unknown[]
+    const dailyRows = this.db.prepare(dailyQuery).all() as DailyRow[]
     const dailyData: DailyReport[] = dailyRows.map((row) => ({
-      date: String(row[0]),
-      orderCount: Number(row[1]),
-      totalSales: Number(row[2]),
-      averageOrderValue: Number(row[3]),
+      date: String(row.date),
+      orderCount: Number(row.orderCount),
+      totalSales: Number(row.totalSales),
+      averageOrderValue: Number(row.averageOrderValue),
     }))
 
     // Fetch monthly reports
+    interface MonthlyRow {
+      month: string
+      year: number
+      totalSales: number
+      orderCount: number
+    }
     const monthlyQuery = `
       SELECT 
         strftime('%Y-%m', created_at) as month,
@@ -48,12 +60,12 @@ export class CsvExportService {
       GROUP BY strftime('%Y-%m', created_at)
       ORDER BY month ASC
     `
-    const monthlyRows = this.db.prepare(monthlyQuery).all() as unknown[]
+    const monthlyRows = this.db.prepare(monthlyQuery).all() as MonthlyRow[]
     const monthlyData: MonthlyReport[] = monthlyRows.map((row) => ({
-      month: String(row[0]),
-      year: Number(row[1]),
-      totalSales: Number(row[2]),
-      orderCount: Number(row[3]),
+      month: String(row.month),
+      year: Number(row.year),
+      totalSales: Number(row.totalSales),
+      orderCount: Number(row.orderCount),
     }))
 
     // Fetch top products
@@ -69,12 +81,18 @@ export class CsvExportService {
       ORDER BY quantitySold DESC
       LIMIT 10
     `
-    const topProductsRows = this.db.prepare(topProductsQuery).all() as unknown[]
+    interface TopProductRow {
+      productId: string
+      name: string
+      quantitySold: number
+      revenue: number
+    }
+    const topProductsRows = this.db.prepare(topProductsQuery).all() as TopProductRow[]
     const topProducts: TopProduct[] = topProductsRows.map((row) => ({
-      productId: String(row[0]),
-      name: String(row[1]),
-      quantitySold: Number(row[2]),
-      revenue: Number(row[3]),
+      productId: String(row.productId),
+      name: String(row.name),
+      quantitySold: Number(row.quantitySold),
+      revenue: Number(row.revenue),
     }))
 
     // Fetch today summary
@@ -86,11 +104,16 @@ export class CsvExportService {
       FROM orders
       WHERE date(created_at) = date('now')
     `
-    const todayRow = this.db.prepare(todayQuery).get() as unknown[]
+    interface TodayRow {
+      orderCount: number
+      totalSales: number
+      averageOrderValue: number
+    }
+    const todayRow = this.db.prepare(todayQuery).get() as TodayRow
     const todaySummary: { orderCount: number; totalSales: number; averageOrderValue: number } = {
-      orderCount: Number(todayRow[0]) || 0,
-      totalSales: Number(todayRow[1]) || 0,
-      averageOrderValue: Number(todayRow[2]) || 0,
+      orderCount: Number(todayRow.orderCount) || 0,
+      totalSales: Number(todayRow.totalSales) || 0,
+      averageOrderValue: Number(todayRow.averageOrderValue) || 0,
     }
 
     return {

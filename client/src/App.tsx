@@ -29,7 +29,7 @@ function App() {
 
       console.log('Checkout successful')
     } catch (error) {
-      console.error('Failed to checkout:', error.response?.data || error.message)
+      console.error('Failed to checkout:', error)
       throw error
     }
   }

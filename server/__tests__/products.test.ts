@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import request from 'supertest'
 import app from '../src/index'
-import { initDb } from '../src/database'
+import { initDatabase } from '../src/database'
 import { seedTestData } from '../src/seedData'
+import Database from 'better-sqlite3'
 
 describe('Product API', () => {
   let db: Database.Database
@@ -10,7 +11,7 @@ describe('Product API', () => {
   beforeAll(async () => {
     // Initialize database with test data
     const dbPath = ':memory:'
-    db = initDb(dbPath)
+    db = initDatabase()
     await seedTestData(db)
   })
 

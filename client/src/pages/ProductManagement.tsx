@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
-import { Product } from '../../../shared/types'
+import { Product } from 'shared'
 
 export default function ProductManagement() {
   const [products, setProducts] = useState<Product[]>([])

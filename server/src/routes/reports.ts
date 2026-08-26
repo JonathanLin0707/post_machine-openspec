@@ -39,9 +39,9 @@ router.get('/daily', (req: Request, res: Response) => {
     FROM orders
     WHERE DATE(created_at) >= ?
     GROUP BY DATE(created_at)
-    ORDER BY date ASC`).all(thirtyDaysAgo.toISOString().split('T')[0])
+    ORDER BY date ASC`).all(thirtyDaysAgo.toISOString().split('T')[0]) as Record<string, unknown>[]
 
-    const result = dailyData.map((row: Record<string, unknown>) => ({
+    const result = dailyData.map((row) => ({
       date: row.date,
       orderCount: Number(row.order_count) || 0,
       totalSales: Number(row.total_sales) || 0
@@ -69,9 +69,9 @@ router.get('/monthly', (req: Request, res: Response) => {
     FROM orders
     WHERE DATE(created_at) >= ?
     GROUP BY strftime('%Y-%m', created_at)
-    ORDER BY month ASC`).all(twelveMonthsAgo.toISOString().split('T')[0])
+    ORDER BY month ASC`).all(twelveMonthsAgo.toISOString().split('T')[0]) as Record<string, unknown>[]
 
-    const result = monthlyData.map((row: Record<string, unknown>) => ({
+    const result = monthlyData.map((row) => ({
       month: row.month,
       year: Number(row.year),
       totalSales: Number(row.total_sales) || 0,
@@ -98,9 +98,9 @@ router.get('/top-products', (req: Request, res: Response) => {
     JOIN products p ON oi.product_id = p.id
     GROUP BY oi.product_id
     ORDER BY quantity_sold DESC
-    LIMIT 10`).all()
+    LIMIT 10`).all() as Record<string, unknown>[]
 
-    const result = topProducts.map((row: Record<string, unknown>) => ({
+    const result = topProducts.map((row) => ({
       name: row.name,
       productId: row.id,
       quantity_sold: Number(row.quantity_sold) || 0,
@@ -128,9 +128,9 @@ router.get('/top-products/custom', (req: Request, res: Response) => {
     JOIN products p ON oi.product_id = p.id
     GROUP BY oi.product_id
     ORDER BY quantity_sold DESC
-    LIMIT ?`).all(limit)
+    LIMIT ?`).all(limit) as Record<string, unknown>[]
 
-    const result = topProducts.map((row: Record<string, unknown>) => ({
+    const result = topProducts.map((row) => ({
       name: row.name,
       barcode: row.barcode,
       quantity_sold: Number(row.quantity_sold) || 0,

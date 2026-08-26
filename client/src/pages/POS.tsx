@@ -6,7 +6,7 @@ import Toast from '../components/Toast'
 import CheckoutConfirmationDialog from '../components/CheckoutConfirmationDialog/CheckoutConfirmationDialog'
 import { useCartStore } from '../store/CartContext'
 import api from '../services/api'
-import { Product, CartItem as CartItemType } from '../../../shared/types'
+import { Product, CartItem as CartItemType } from 'shared'
 
 interface POSProps {
   onCheckout: (cartItems: CartItemType[], paymentMethod: string) => Promise<void>

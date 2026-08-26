@@ -57,7 +57,8 @@ export const useCartStore = create<CartStore>()(
           const item = state.items.find((i) => i.productId === productId)
           if (!item) return state
 
-          const newQuantity = item.quantity + delta
+          const newQuantity = delta
+          // const newQuantity = item.quantity + delta
           return {
             items: state.items.map((i) =>
               i.productId === productId
@@ -71,23 +72,28 @@ export const useCartStore = create<CartStore>()(
       increaseQuantity: (productId, stock?): boolean => {
         const item = get().items.find((i) => i.productId === productId)
         if (!item) return false
-        
-        // Check if adding 1 more exceeds stock if stock is provided
-        if (stock !== undefined && stock == 0) {
+
+        stock = stock ?? item.stock
+
+        // Check if adding 1 more exceeds stock
+        if (stock !== undefined && item.quantity + 1 > stock) {
           return false
         }
-        
+
         set((state) => {
           const newQuantity = item.quantity + 1
           return {
             items: state.items.map((i) =>
               i.productId === productId
-                ? { ...i, quantity: newQuantity, subtotal: i.price * newQuantity }
+                ? {
+                  ...i,
+                  quantity: newQuantity,
+                  subtotal: i.price * newQuantity,
+                }
                 : i
             ),
           }
         })
-        
         return true
       },
 
@@ -118,4 +124,4 @@ export const useCartStore = create<CartStore>()(
   )
 )
 
-export default useCartStore as CartStore
+export default useCartStore

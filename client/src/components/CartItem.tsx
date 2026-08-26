@@ -1,4 +1,4 @@
-import { CartItem as CartItemType } from '../../../shared/types'
+import { CartItem as CartItemType } from 'shared'
 
 interface CartItemProps {
   item: CartItemType & { stock?: number }

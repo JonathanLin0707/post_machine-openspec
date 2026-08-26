@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { initDatabase, getDb } from '../database.js'
-import { Product } from '../../shared/types.js'
+import { Product } from 'shared'
+
 
 initDatabase()
 const db = getDb()
@@ -29,19 +30,19 @@ router.get('/', (req: Request, res: Response) => {
         id: String(row.id),
         name: row.name,
         price: Number(row.price),
-        barcode: row.barcode || null,
-        category: row.category || null,
+        barcode: row.barcode,
+        category: row.category,
         stock: Number(row.stock),
-        image_url: row.image_url || null,
-        created_at: row.created_at || null,
-        updated_at: row.updated_at || null
+        imageUrl: row.imageUrl,
+        createdAt: row.createdAt || null,
+        updatedAt: row.updatedAt || null
       })
     })
   } catch (error) {
     console.error('Error fetching products:', error)
   }
 
-  const filtered = products
+  let filtered = products
 
   if (search) {
     filtered = filtered.filter(
@@ -72,9 +73,9 @@ router.get('/:id', (req: Request, res: Response) => {
       barcode: row.barcode || null,
       category: row.category || null,
       stock: Number(row.stock),
-      image_url: row.image_url || null,
-      created_at: row.created_at || null,
-      updated_at: row.updated_at || null
+      image_url: row.imageUrl || null,
+      created_at: row.createdAt || null,
+      updated_at: row.updatedAt || null
     })
   } catch (error) {
     console.error('Error fetching product:', error)
@@ -113,9 +114,9 @@ router.post('/', (req: Request, res: Response) => {
       barcode: row.barcode || null,
       category: row.category || null,
       stock: Number(row.stock),
-      image_url: row.image_url || null,
-      created_at: row.created_at || null,
-      updated_at: row.updated_at || null
+      image_url: row.imageUrl || null,
+      created_at: row.createdAt || null,
+      updated_at: row.updatedAt || null
     })
   } catch (error) {
     if ((error as { message: string }).message.includes('UNIQUE constraint failed')) {
@@ -152,9 +153,9 @@ router.post('/cart', (req: Request, res: Response) => {
       barcode: row.barcode || null,
       category: row.category || null,
       stock: Number(row.stock),
-      image_url: row.image_url || null,
-      created_at: row.created_at || null,
-      updated_at: row.updated_at || null
+      image_url: row.imageUrl || null,
+      created_at: row.createdAt || null,
+      updated_at: row.updatedAt || null
     })
   } catch (error) {
     if ((error as { message: string }).message.includes('FOREIGN KEY constraint failed')) {
@@ -203,7 +204,7 @@ router.put('/:id', (req: Request, res: Response) => {
     const newBarcode = barcode ?? existing.barcode
     const newCategory = category ?? existing.category
     const newStock = stock ?? existing.stock
-    const newImageUrl = image_url ?? existing.image_url
+    const newImageUrl = image_url ?? existing.imageUrl
 
     // Use COALESCE to preserve NULL values when not updating
     updateProduct.run(
@@ -228,9 +229,9 @@ router.put('/:id', (req: Request, res: Response) => {
       barcode: updatedRow.barcode || null,
       category: updatedRow.category || null,
       stock: Number(updatedRow.stock),
-      image_url: updatedRow.image_url || null,
-      created_at: updatedRow.created_at || null,
-      updated_at: updatedRow.updated_at || null
+      image_url: updatedRow.imageUrl || null,
+      created_at: updatedRow.createdAt || null,
+      updated_at: updatedRow.updatedAt || null
     })
   } catch (error) {
     console.error('Error updating product:', error)

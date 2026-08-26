@@ -43,7 +43,7 @@ const createOrder = db.prepare(`INSERT INTO orders (total, tax, payment_method, 
                                 VALUES (?, ?, ?, 'completed')`)
 
 interface OrderItem {
-  id: number
+  id?: number
   productId: number
   name: string
   quantity: number
@@ -111,7 +111,7 @@ router.post('/', (req: Request, res: Response) => {
       orderItems.push({
         productId: product.id,
         name: product.name,
-        price: product.price,
+        unitPrice: product.price,
         quantity: item.quantity,
         subtotal,
       })
@@ -136,7 +136,7 @@ router.post('/', (req: Request, res: Response) => {
 
     // Insert order items
     for (const item of orderItems) {
-      createOrderItems.run(orderId, item.productId, item.quantity, item.price, item.subtotal)
+      createOrderItems.run(orderId, item.productId, item.quantity, item.unitPrice, item.subtotal)
     }
 
     const orderData = getOrderByIdWithItems.get([orderId])
@@ -162,10 +162,11 @@ router.post('/', (req: Request, res: Response) => {
 // GET /api/orders - Get all orders
 router.get('/', (req: Request, res: Response) => {
   try {
-    const rows = getAllOrdersWithItems.all()
+    
+    const rows = getAllOrdersWithItems.all() as Record<string, unknown>[]
     const orders: Order[] = []
     
-    rows.forEach((row: Record<string, unknown>) => {
+    rows.forEach((row) => {
       orders.push({
         id: Number(row[0]),
         total: Number(row[1]),
@@ -173,7 +174,7 @@ router.get('/', (req: Request, res: Response) => {
         payment_method: String(row[3]),
         status: String(row[4]),
         created_at: String(row[5]),
-        items_json: row[6] || []
+        items_json: row[6] ? JSON.parse(String(row[6])) : []
       })
     })
 
