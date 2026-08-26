@@ -1,3 +1,6 @@
+import { testProducts } from './seedData'
+import Database from 'better-sqlite3'
+
 export const testProducts = [
   { name: '蘋果', price: 89, barcode: '90001', category: '水果', stock: 50 },
   { name: '香蕉', price: 45, barcode: '90002', category: '水果', stock: 80 },
@@ -10,3 +13,28 @@ export const testProducts = [
   { name: '薯片', price: 55, barcode: '90009', category: '零食', stock: 70 },
   { name: '香檳酒', price: 280, barcode: '90010', category: '酒精飲料', stock: 15 },
 ]
+
+export function seedTestData(db: Database.Database): Promise<void> {
+  return new Promise((resolve, reject) => {
+    try {
+      // Clear existing test data
+      db.exec(`DELETE FROM products`)
+      
+      // Insert test products
+      const insert = db.prepare(`
+        INSERT INTO products (name, price, barcode, category, stock)
+        VALUES (?, ?, ?, ?, ?)
+      `)
+      
+      testProducts.forEach(product => {
+        insert.run(product.name, product.price, product.barcode, product.category, product.stock)
+      })
+      
+      console.log('Test data seeded successfully')
+      resolve()
+    } catch (error) {
+      console.error('Error seeding test data:', error)
+      reject(error)
+    }
+  })
+}

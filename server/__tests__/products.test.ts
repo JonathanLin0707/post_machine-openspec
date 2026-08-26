@@ -11,7 +11,7 @@ describe('Product API', () => {
   beforeAll(async () => {
     // Initialize database with test data
     const dbPath = ':memory:'
-    db = initDatabase()
+    db = initDatabase(dbPath)
     await seedTestData(db)
   })
 
