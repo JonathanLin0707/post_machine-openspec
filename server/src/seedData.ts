@@ -1,4 +1,3 @@
-import { testProducts } from './seedData'
 import Database from 'better-sqlite3'
 
 export const testProducts = [
@@ -17,8 +16,14 @@ export const testProducts = [
 export function seedTestData(db: Database.Database): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
+      // Disable foreign key constraints for testing
+      db.exec('PRAGMA foreign_keys = OFF')
+      
       // Clear existing test data
       db.exec(`DELETE FROM products`)
+      
+      // Re-enable foreign key constraints
+      db.exec('PRAGMA foreign_keys = ON')
       
       // Insert test products
       const insert = db.prepare(`
