@@ -11,7 +11,7 @@ interface OrderItem {
 }
 
 interface Order {
-  id: number
+  id: string // 改為string type
   total: number
   tax: number
   payment_method: string
@@ -21,7 +21,7 @@ interface Order {
 }
 
 interface ApiResponseOrder {
-  id: number
+  id: string // 改為string type
   total: number
   tax: number
   payment_method: string
@@ -117,7 +117,7 @@ export default function Orders() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">訂單 ID</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">訂單編號</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">日期</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">支付方式</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">總金額</th>
@@ -129,7 +129,7 @@ export default function Orders() {
                 <tbody className="divide-y divide-gray-200">
                   {filteredOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">#{order.id || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">編號 {order.id || '未指定'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {order.created_at ? new Date(order.created_at).toLocaleDateString('zh-TW') : 'N/A'}
                       </td>
@@ -150,7 +150,7 @@ export default function Orders() {
                       <td className="px-4 py-3 text-sm">
                         <button
                           onClick={() => {
-                            const item = order.items_json?.[0]
+                            const firstItem = order.items_json?.at(0)
                             if (item) {
                               window.open(`/products?id=${item.productId}`, '_blank')
                             }
