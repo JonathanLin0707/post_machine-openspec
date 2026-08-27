@@ -49,13 +49,18 @@ function OrderItemsModal({ isOpen, onClose, items }: OrderItemsModalProps) {
 
   if (!isOpen) return null
 
+  const handleClose = () => {
+    setSelectedItem(null)
+    onClose()
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-xl font-bold text-gray-800">訂單商品詳情</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
           >
             ✕
@@ -103,7 +108,7 @@ function OrderItemsModal({ isOpen, onClose, items }: OrderItemsModalProps) {
         
         <div className="p-4 border-t bg-gray-50 rounded-b-lg flex justify-end">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg"
           >
             關閉
