@@ -51,6 +51,7 @@ interface OrderItem {
   subtotal: number
 }
 
+/*
 interface Order {
   id: number
   total: number
@@ -60,6 +61,7 @@ interface Order {
   created_at: string
   items_json: OrderItem[]
 }
+*/
 
 // Removed unused OrderItemInput interface
 
