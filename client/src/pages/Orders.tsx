@@ -11,7 +11,7 @@ interface OrderItem {
 }
 
 interface Order {
-  id: string // 改為string type
+  id: string // 改為 string type
   total: number
   tax: number
   payment_method: string
@@ -21,13 +21,20 @@ interface Order {
 }
 
 interface ApiResponseOrder {
-  id: string // 改為string type
+  id: string // 改為 string type
   total: number
   tax: number
   payment_method: string
   status: string
   created_at: string
   items_json: string | OrderItem[]
+}
+
+// 數值解析函數，與 SalesReport.tsx 保持一致
+function parseNumeric(value: unknown): number {
+  if (value === null || value === undefined || value === '') return 0
+  const num = Number(value)
+  return isNaN(num) ? 0 : num
 }
 
 export default function Orders() {
@@ -44,13 +51,28 @@ export default function Orders() {
     setLoading(true)
     try {
       const response = await api.get('/orders')
-      // 解析 items_json 字串為陣列
-      const parsedOrders = response.data.map((order: ApiResponseOrder) => ({
-        ...order,
-        items_json: typeof order.items_json === 'string' 
-          ? JSON.parse(order.items_json) 
-          : order.items_json || []
-      }))
+      // 解析 items_json 字串為陣列，與 SalesReport.tsx 的處理方式一致
+      const parsedOrders = response.data.map((order: ApiResponseOrder) => {
+        let items: OrderItem[] = []
+        
+        if (typeof order.items_json === 'string') {
+          try {
+            items = JSON.parse(order.items_json)
+          } catch (error) {
+            console.error('Failed to parse items_json:', error)
+            items = []
+          }
+        } else if (Array.isArray(order.items_json)) {
+          items = order.items_json
+        }
+        
+        return {
+          ...order,
+          items_json: items,
+          total: parseNumeric(order.total),
+          tax: parseNumeric(order.tax)
+        }
+      })
       setOrders(parsedOrders)
     } catch (error) {
       console.error('Failed to fetch orders:', error)
@@ -134,7 +156,7 @@ export default function Orders() {
                         {order.created_at ? new Date(order.created_at).toLocaleDateString('zh-TW') : 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{order.payment_method || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm font-bold text-gray-900">{formatCurrency(order.total || 0)}</td>
+                      <td className="px-4 py-3 text-sm font-bold text-gray-900">{formatCurrency(order.total)}</td>
                       <td className="px-4 py-3 text-sm">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           order.status === 'completed' ? 'bg-green-100 text-green-800' :
