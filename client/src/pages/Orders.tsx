@@ -150,9 +150,9 @@ export default function Orders() {
                       <td className="px-4 py-3 text-sm">
                         <button
                           onClick={() => {
-                            const firstItem = order.items_json?.at(0)
-                            if (item) {
-                              window.open(`/products?id=${item.productId}`, '_blank')
+                            const firstItem = order.items_json?.[0]
+                            if (firstItem) {
+                              window.open(`/products?id=${firstItem.productId}`, '_blank')
                             }
                           }}
                           className="text-blue-600 hover:text-blue-800"
