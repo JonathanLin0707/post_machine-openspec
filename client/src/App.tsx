@@ -38,6 +38,7 @@ function App() {
     <Layout>
       <Routes>
         <Route path="/" element={<POS onCheckout={handleCheckout} />} />
+        <Route path="/cart" element={<POS onCheckout={handleCheckout} />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/products" element={<ProductManagement />} />
         <Route path="/reports" element={<SalesReport />} />
