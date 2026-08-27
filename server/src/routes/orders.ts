@@ -163,21 +163,8 @@ router.post('/', (req: Request, res: Response) => {
 router.get('/', (req: Request, res: Response) => {
   try {
     
-    const rows = getAllOrdersWithItems.all() as Record<string, unknown>[]
-    const orders: Order[] = []
-    
-    rows.forEach((row) => {
-      orders.push({
-        id: Number(row[0]),
-        total: Number(row[1]),
-        tax: Number(row[2]),
-        payment_method: String(row[3]),
-        status: String(row[4]),
-        created_at: String(row[5]),
-        items_json: row[6] ? JSON.parse(String(row[6])) : []
-      })
-    })
-
+    const orders = getAllOrdersWithItems.all() as OrderItem[]
+    console.log(orders)    
     res.json(orders)
   } catch (error) {
     console.error('Error fetching orders:', error)
@@ -188,20 +175,11 @@ router.get('/', (req: Request, res: Response) => {
 // GET /api/orders/:id - Get single order with items
 router.get('/:id', (req: Request, res: Response) => {
   try {
-    const row = getOrderByIdWithItems.get([req.params.id]) as unknown[]
-    if (!row) {
+    const orders = getOrderByIdWithItems.get([req.params.id]) as OrderItem[]
+    if (!orders) {
       return res.status(404).json({ error: 'Order not found' })
     }
-
-    res.json({
-      id: Number(row[0]),
-      total: Number(row[1]),
-      tax: Number(row[2]),
-      payment_method: String(row[3]),
-      status: String(row[4]),
-      created_at: String(row[5]),
-      items_json: row[6] || []
-    })
+    return orders
   } catch (error) {
     console.error('Error fetching order:', error)
     res.status(500).json({ error: 'Failed to fetch order' })
