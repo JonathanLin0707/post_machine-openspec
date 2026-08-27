@@ -20,7 +20,7 @@ FROM orders o
 LEFT JOIN order_items oi ON o.id = oi.order_id
 LEFT JOIN products p ON oi.product_id = p.id
 GROUP BY o.id
-ORDER BY o.created_at DESC`)
+ORDER BY o.created_at`)
 
 const getOrderByIdWithItems = db.prepare(`SELECT o.*, json_group_array(json_object(
   'id', oi.id,
@@ -127,13 +127,13 @@ router.post('/', (req: Request, res: Response) => {
   if (isNaN(total) || total <= 0) {
     return res.status(400).json({ error: 'Invalid order total' })
   }
-
-  const tax = Number(total * 0.1)
-  const grandTotal = Number(total + tax)
+  const tax = 0;
+  const tax_price = Number(total * tax)
+  const grandTotal = Number(total + tax_price)
 
   // Create order
   try {
-    const result = createOrder.run(grandTotal, tax, payment_method)
+    const result = createOrder.run(grandTotal, tax_price, payment_method)
     const orderId = result.lastInsertRowid!
 
     // Insert order items
@@ -164,9 +164,7 @@ router.post('/', (req: Request, res: Response) => {
 // GET /api/orders - Get all orders
 router.get('/', (req: Request, res: Response) => {
   try {
-    
     const orders = getAllOrdersWithItems.all() as OrderItem[]
-    console.log(orders)    
     res.json(orders)
   } catch (error) {
     console.error('Error fetching orders:', error)
