@@ -21,6 +21,7 @@ export default function Layout({ children }: LayoutProps) {
   }
 
   const navItems = [
+    { id: 'cart', label: '購物車', icon: '🛒' },
     { id: 'orders', label: '訂單查詢', icon: '📋' },
     { id: 'products', label: '商品管理', icon: '📦' },
     { id: 'reports', label: '銷售報表', icon: '📊' },
