@@ -47,9 +47,9 @@ app.get('*', (req, res) => {
 })
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response) => {
+app.use((err: Error & { status?: number }, req: express.Request, res: express.Response) => {
   console.error('Error:', err.message)
-  res.status((err as any).status || 500).json({
+  res.status(err.status ?? 500).json({
     error: err.message || 'Internal server error',
   })
 })
