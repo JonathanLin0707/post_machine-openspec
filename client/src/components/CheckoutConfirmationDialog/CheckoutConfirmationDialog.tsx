@@ -66,6 +66,10 @@ export default function CheckoutConfirmationDialog({
               <span>小計</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
+            <div className="flex justify-between items-center text-gray-600 pt-2 border-b border-dashed">
+              <span>優惠</span>
+              <span>${(subtotal - total).toFixed(2)}</span>
+            </div>
             <div className="flex justify-between font-bold text-xl pt-2 border-t border-gray-300">
               <span className="text-blue-600">總計</span>
               <span className="text-blue-600">{formatCurrency(total)}</span>
