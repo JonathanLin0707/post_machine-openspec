@@ -22,6 +22,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   total: number;
+  discount: number;
   tax: number;
   paymentMethod: 'cash' | 'credit_card' | 'mobile_payment';
   status: 'completed' | 'pending' | 'cancelled';
