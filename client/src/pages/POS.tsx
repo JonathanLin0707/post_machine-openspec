@@ -18,6 +18,7 @@ export default function POS({ onCheckout }: POSProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [discountAmount, setDiscountAmount] = useState<number>(0)
 
   const cart = useCartStore((state) => state.items)
 
@@ -132,6 +133,16 @@ export default function POS({ onCheckout }: POSProps) {
     setTimeout(() => setToastMessage(null), 3000)
   }
 
+  // Update discount amount with validation
+  const handleDiscountChange = (value: string) => {
+    const parsedValue = parseFloat(value)
+    if (isNaN(parsedValue)) {
+      setDiscountAmount(0)
+      return
+    }
+    setDiscountAmount(Math.max(0, parsedValue))
+  }
+
   // Filter products by search and category
   const filteredProducts = products.filter(product => {
     const matchesSearch = !searchQuery ||
@@ -142,7 +153,7 @@ export default function POS({ onCheckout }: POSProps) {
 
   // Calculate cart totals
   const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0)
-  const total = subtotal
+  const total = Math.max(0, subtotal - discountAmount)
 
   // Checkout confirmation dialog state
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
@@ -167,6 +178,7 @@ export default function POS({ onCheckout }: POSProps) {
     await onCheckout(cart, paymentMethod)
     setShowConfirmationDialog(false)
     setSelectedPaymentMethod(null)
+    setDiscountAmount(0)
     showToast('結帳成功！')
   }
 
@@ -257,6 +269,18 @@ export default function POS({ onCheckout }: POSProps) {
             <div className="flex justify-between">
               <span>小計:</span>
               <span>${subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2">
+              <span>優惠:</span>
+              <input
+                type="number"
+                min="0"
+                max={subtotal}
+                value={discountAmount || ''}
+                onChange={(e) => handleDiscountChange(e.target.value)}
+                className="w-24 px-3 py-1 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:outline-none text-right"
+                placeholder="0"
+              />
             </div>
             <div className="flex justify-between font-bold text-xl pt-2 border-t border-gray-300">
               <span>總計:</span>
