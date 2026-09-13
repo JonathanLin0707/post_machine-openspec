@@ -6,10 +6,10 @@ import Toast from '../components/Toast'
 import CheckoutConfirmationDialog from '../components/CheckoutConfirmationDialog/CheckoutConfirmationDialog'
 import { useCartStore } from '../store/CartContext'
 import api from '../services/api'
-import { Product, CartItem as CartItemType } from 'shared'
+import { Product } from 'shared'
 
 interface POSProps {
-  onCheckout: (cartItems: CartItemType[], paymentMethod: string) => Promise<void>
+  onCheckout: (discountAmount: number, paymentMethod: string) => () => Promise<void>
 }
 
 export default function POS({ onCheckout }: POSProps) {
@@ -175,7 +175,7 @@ export default function POS({ onCheckout }: POSProps) {
 
   // Handle confirm checkout
   const handleConfirmCheckout = async (paymentMethod: string) => {
-    await onCheckout(cart, paymentMethod)
+    await onCheckout(discountAmount, paymentMethod)()
     setShowConfirmationDialog(false)
     setSelectedPaymentMethod(null)
     setDiscountAmount(0)

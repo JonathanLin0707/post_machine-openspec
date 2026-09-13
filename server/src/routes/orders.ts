@@ -39,8 +39,8 @@ const updateStock = db.prepare('UPDATE products SET stock = stock - ?, updated_a
 
 const getProductById = db.prepare('SELECT * FROM products WHERE id = ?')
 
-const createOrder = db.prepare(`INSERT INTO orders (total, tax, payment_method, status) 
-                                VALUES (?, ?, ?, 'completed')`)
+const createOrder = db.prepare(`INSERT INTO orders (total, discount, tax, payment_method, status) 
+                                VALUES (?, ?, ?, ?, 'completed')`)
 
 interface OrderItem {
   id?: number
@@ -69,7 +69,7 @@ const router = Router()
 
 // POST /api/orders - Create new order
 router.post('/', (req: Request, res: Response) => {
-  const { items, payment_method } = req.body
+  const { items, payment_method, discount } = req.body
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'Order items are required' })
@@ -79,8 +79,14 @@ router.post('/', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid payment method' })
   }
 
+  // Parse and validate discount (optional, in currency units)
+  const parsedDiscount = typeof discount === 'number' ? discount : Number(discount) || 0
+  if (isNaN(parsedDiscount) || parsedDiscount < 0) {
+    return res.status(400).json({ error: 'Invalid discount amount' })
+  }
+
   // Validate and deduct stock for each item
-  let total = 0
+  let subtotal = 0
   const orderItems: OrderItem[] = []
 
   for (const item of items) {
@@ -104,8 +110,8 @@ router.post('/', (req: Request, res: Response) => {
         })
       }
 
-      const subtotal = product.price * item.quantity
-      total += subtotal
+      const lineSubtotal = product.price * item.quantity
+      subtotal += lineSubtotal
 
       // Deduct stock
       updateStock.run(item.quantity, item.productId)
@@ -115,7 +121,7 @@ router.post('/', (req: Request, res: Response) => {
         name: product.name,
         unitPrice: product.price,
         quantity: item.quantity,
-        subtotal,
+        subtotal: lineSubtotal,
       })
     } catch (error) {
       console.error(`Error processing item ${item.productId}:`, error)
@@ -123,17 +129,18 @@ router.post('/', (req: Request, res: Response) => {
     }
   }
 
-  // Ensure total is valid
-  if (isNaN(total) || total <= 0) {
-    return res.status(400).json({ error: 'Invalid order total' })
+  // Validate discount against the computed subtotal before creating the order
+  if (parsedDiscount > subtotal) {
+    return res.status(400).json({ error: 'Discount cannot exceed order total' })
   }
-  const tax = 0;
-  const tax_price = Number(total * tax)
-  const grandTotal = Number(total + tax_price)
+
+  const tax = 0
+  const tax_price = Number(subtotal * tax)
+  const grandTotal = Number((subtotal - parsedDiscount) + tax_price)
 
   // Create order
   try {
-    const result = createOrder.run(grandTotal, tax_price, payment_method)
+    const result = createOrder.run(grandTotal, parsedDiscount, tax_price, payment_method)
     const orderId = result.lastInsertRowid!
 
     // Insert order items
@@ -149,6 +156,7 @@ router.post('/', (req: Request, res: Response) => {
     res.status(201).json({
       id: Number((orderData as Record<string, unknown>)['id']),
       total: Number((orderData as Record<string, unknown>)['total']),
+      discount: Number((orderData as Record<string, unknown>)['discount']) || 0,
       tax: Number((orderData as Record<string, unknown>)['tax']),
       payment_method: String((orderData as Record<string, unknown>)['payment_method']),
       status: String((orderData as Record<string, unknown>)['status']),
@@ -175,11 +183,20 @@ router.get('/', (req: Request, res: Response) => {
 // GET /api/orders/:id - Get single order with items
 router.get('/:id', (req: Request, res: Response) => {
   try {
-    const orders = getOrderByIdWithItems.get([req.params.id]) as OrderItem[]
-    if (!orders) {
+    const orderData = getOrderByIdWithItems.get([req.params.id]) as Record<string, unknown> | null
+    if (!orderData) {
       return res.status(404).json({ error: 'Order not found' })
     }
-    return orders
+    res.json({
+      id: Number(orderData['id']),
+      total: Number(orderData['total']) || 0,
+      discount: Number(orderData['discount']) || 0,
+      tax: Number(orderData['tax']) || 0,
+      payment_method: String(orderData['payment_method']),
+      status: String(orderData['status']),
+      created_at: String(orderData['created_at']),
+      items_json: orderData['items_json'] || []
+    })
   } catch (error) {
     console.error('Error fetching order:', error)
     res.status(500).json({ error: 'Failed to fetch order' })

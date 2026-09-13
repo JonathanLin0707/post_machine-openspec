@@ -13,6 +13,7 @@ interface OrderItem {
 interface Order {
   id: string // 改為 string type
   total: number
+  discount: number
   tax: number
   payment_method: string
   status: string
@@ -23,6 +24,7 @@ interface Order {
 interface ApiResponseOrder {
   id: string // 改為 string type
   total: number
+  discount: number
   tax: number
   payment_method: string
   status: string
@@ -154,6 +156,7 @@ export default function Orders() {
           ...order,
           items_json: items,
           total: parseNumeric(order.total),
+          discount: parseNumeric(order.discount),
           tax: parseNumeric(order.tax)
         }
       })
@@ -232,6 +235,7 @@ export default function Orders() {
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">日期</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">支付方式</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">總金額</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">優惠金額</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">狀態</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">商品數量</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">操作</th>
@@ -245,10 +249,13 @@ export default function Orders() {
                         {order.created_at ? new Date(order.created_at).toLocaleDateString('zh-TW') : 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">{order.payment_method || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm font-bold text-gray-900">{formatCurrency(order.total)}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                       <td className="px-4 py-3 text-sm font-bold text-gray-900">{formatCurrency(order.total)}</td>
+                       <td className="px-4 py-3 text-sm font-semibold text-orange-600">
+                         {order.discount > 0 ? formatCurrency(order.discount) : '-'}
+                       </td>
+                       <td className="px-4 py-3 text-sm">
+                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                           order.status === 'completed' ? 'bg-green-100 text-green-800' :
                           order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-red-100 text-red-800'
                         }`}>

@@ -57,6 +57,12 @@ export function initSchema(): void {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`)
 
+  // Add discount column to existing orders tables (migration for pre-existing DBs)
+  const cols = db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]
+  if (!cols.some(c => c.name === 'discount')) {
+    db.exec('ALTER TABLE orders ADD COLUMN discount REAL NOT NULL DEFAULT 0')
+  }
+
   // Order items table
   db.exec(`CREATE TABLE IF NOT EXISTS order_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

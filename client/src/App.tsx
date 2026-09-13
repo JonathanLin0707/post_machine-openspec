@@ -9,17 +9,19 @@ import api from './services/api'
 import { CartItem } from 'shared'
 
 function App() {
-  const handleCheckout = async (cartItems: CartItem[]) => {
+  const handleCheckout = async (cartItems: CartItem[], discountAmount: number, paymentMethod: string) => {
     try {
-      console.log('Starting checkout with items:', cartItems)
-      
-      // Create order - send items with product_id (server calculates total and tax)
+      console.log('Starting checkout with items:', cartItems, 'discount:', discountAmount)
+
+      // Create order - send items and the customer-selected discount amount.
+      // The server persists the discounted total so orders and sales reports stay in sync.
       await api.post('/orders', {
         items: cartItems.map(item => ({
           productId: String(item.productId),
           quantity: item.quantity
         })),
-        payment_method: 'cash'
+        discount: discountAmount,
+        payment_method: paymentMethod
       })
 
       console.log('Order created successfully')
@@ -34,11 +36,18 @@ function App() {
     }
   }
 
+  const handleCheckoutWithDiscount = (discountAmount: number, paymentMethod: string) => {
+    return async () => {
+      const cart = useCartStore.getState().items
+      await handleCheckout(cart, discountAmount, paymentMethod)
+    }
+  }
+
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<POS onCheckout={handleCheckout} />} />
-        <Route path="/cart" element={<POS onCheckout={handleCheckout} />} />
+        <Route path="/" element={<POS onCheckout={handleCheckoutWithDiscount} />} />
+        <Route path="/cart" element={<POS onCheckout={handleCheckoutWithDiscount} />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/products" element={<ProductManagement />} />
         <Route path="/reports" element={<SalesReport />} />
