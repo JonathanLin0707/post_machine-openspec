@@ -1,8 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useCartStore } from '../store/CartContext'
 
+
 describe('CartContext (useCartStore)', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
   it('should initialize with empty cart', () => {
     const { result } = renderHook(() => useCartStore())
 
@@ -85,6 +90,9 @@ describe('CartContext (useCartStore)', () => {
   })
 
   describe('increaseQuantity with stock check', () => {
+    beforeEach(() => {
+      localStorage.clear()
+    })
     it('should increase quantity when stock is available', () => {
       const { result } = renderHook(() => useCartStore())
       let canIncrease
@@ -164,6 +172,9 @@ describe('CartContext (useCartStore)', () => {
   })
 
   describe('decreaseQuantity', () => {
+    beforeEach(() => {
+      localStorage.clear()
+    })
     it('should decrease quantity and implicitly increase stock', () => {
       const { result } = renderHook(() => useCartStore())
 

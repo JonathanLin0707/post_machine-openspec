@@ -4,7 +4,11 @@ server/data/grocery.db-shm
 server/data/grocery.db-wal
 .smallcode/
 .code-graph/
+.codegraph/
 .memory/
 .aider*
 client/dist/
 server/dist/
+.openspec-store/
+openspec/
+.github/
