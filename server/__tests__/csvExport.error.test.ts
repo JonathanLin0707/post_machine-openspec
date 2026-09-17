@@ -1,18 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
-import path from 'path'
-import fs from 'fs'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 import request from 'supertest'
 import type { Express } from 'express'
-
-const tmpDb = path.join(process.env.TMPDIR || process.cwd(), 'csv-export-error-test.db')
-for (const f of [tmpDb, tmpDb + '-wal', tmpDb + '-shm']) {
-  try {
-    if (fs.existsSync(f)) fs.unlinkSync(f)
-  } catch {
-    /* ignore */
-  }
-}
-process.env.DATABASE_PATH = tmpDb
 
 vi.mock('../src/services/csvExportService.js', () => ({
   CsvExportService: class {
@@ -38,22 +26,6 @@ beforeAll(async () => {
   app = express()
   app.use(express.json())
   app.use('/api/reports', reportsRouter)
-})
-
-afterAll(async () => {
-  try {
-    const dbMod = await import('../src/database.js')
-    ;(dbMod as { getDb: () => { close: () => void } }).getDb().close()
-  } catch {
-    /* ignore */
-  }
-  for (const f of [tmpDb, tmpDb + '-wal', tmpDb + '-shm']) {
-    try {
-      if (fs.existsSync(f)) fs.unlinkSync(f)
-    } catch {
-      /* ignore */
-    }
-  }
 })
 
 describe('POST /api/reports/csv-export error handling', () => {

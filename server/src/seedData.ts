@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3'
+import { query } from './database.js'
 
 export const testProducts = [
   { name: '蘋果', price: 89, barcode: '90001', category: '水果', stock: 50 },
@@ -13,33 +13,20 @@ export const testProducts = [
   { name: '香檳酒', price: 280, barcode: '90010', category: '酒精飲料', stock: 15 },
 ]
 
-export function seedTestData(db: Database.Database): Promise<void> {
-  return new Promise((resolve, reject) => {
-    try {
-      // Disable foreign key constraints for testing
-      db.exec('PRAGMA foreign_keys = OFF')
-      
-      // Clear existing test data
-      db.exec(`DELETE FROM products`)
-      
-      // Re-enable foreign key constraints
-      db.exec('PRAGMA foreign_keys = ON')
-      
-      // Insert test products
-      const insert = db.prepare(`
-        INSERT INTO products (name, price, barcode, category, stock)
-        VALUES (?, ?, ?, ?, ?)
-      `)
-      
-      testProducts.forEach(product => {
-        insert.run(product.name, product.price, product.barcode, product.category, product.stock)
-      })
-      
-      console.log('Test data seeded successfully')
-      resolve()
-    } catch (error) {
-      console.error('Error seeding test data:', error)
-      reject(error)
+export async function seedTestData(): Promise<void> {
+  try {
+    await query('DELETE FROM products')
+
+    for (const product of testProducts) {
+      await query(
+        'INSERT INTO products (name, price, barcode, category, stock) VALUES ($1, $2, $3, $4, $5)',
+        [product.name, product.price, product.barcode, product.category, product.stock],
+      )
     }
-  })
+
+    console.log('Test data seeded successfully')
+  } catch (error) {
+    console.error('Error seeding test data:', error)
+    throw error
+  }
 }

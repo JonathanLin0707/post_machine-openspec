@@ -1,66 +1,62 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import path from 'path'
-import fs from 'fs'
-import Database from 'better-sqlite3'
 import type { OrderExport } from 'shared'
 import type { CsvExportService as CsvExportServiceType } from '../src/services/csvExportService.js'
+import {
+  closeTestDatabase,
+  initTestDatabase,
+  probeDatabase,
+  resetDatabase,
+  seedProduct,
+} from './helpers.js'
 
-const tmpDb = path.join(process.env.TMPDIR || process.cwd(), 'csv-export-service-test.db')
-for (const f of [tmpDb, tmpDb + '-wal', tmpDb + '-shm']) {
-  try {
-    if (fs.existsSync(f)) fs.unlinkSync(f)
-  } catch {
-    /* ignore */
-  }
-}
-process.env.DATABASE_PATH = tmpDb
+const available = await probeDatabase()
+const describeOk = available ? describe : describe.skip
+const beforeAllOk = available ? beforeAll : () => {}
+const afterAllOk = available ? afterAll : () => {}
 
-let db: Database.Database
 let service: CsvExportServiceType
 
-beforeAll(async () => {
-  const { initDatabase } = await import('../src/database.js')
-  initDatabase()
+beforeAllOk(async () => {
+  await initTestDatabase()
+  await resetDatabase()
+
+  const p1 = await seedProduct('豆漿', 30)
+  const p2 = await seedProduct('Milk, 2%', 45)
+
+  // Seed explicit order values (total/discount are independent in stored data)
+  const { query } = await import('../src/database.js')
+  const o1 = await query<{ id: number }>(
+    `INSERT INTO orders (total, discount, tax, payment_method, status)
+     VALUES ($1, $2, 0, 'cash', 'completed') RETURNING id`,
+    [105, 15],
+  )
+  const o2 = await query<{ id: number }>(
+    `INSERT INTO orders (total, discount, tax, payment_method, status)
+     VALUES ($1, $2, 0, 'credit_card', 'completed') RETURNING id`,
+    [45, 0],
+  )
+  await query(
+    'INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)',
+    [o1.rows[0].id, p1, 2, 30, 60],
+  )
+  await query(
+    'INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)',
+    [o1.rows[0].id, p2, 1, 45, 45],
+  )
+  await query(
+    'INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)',
+    [o2.rows[0].id, p2, 1, 45, 45],
+  )
+
   const { CsvExportService } = await import('../src/services/csvExportService.js')
   service = new CsvExportService()
-
-  db = new Database(tmpDb)
-  const prodId = db.prepare('INSERT INTO products (name, price, stock) VALUES (?, ?, 100)')
-  const p1 = Number(prodId.run('豆漿', 30).lastInsertRowid)
-  const p2 = Number(prodId.run('Milk, 2%', 45).lastInsertRowid)
-
-  const ord = db.prepare("INSERT INTO orders (total, discount, tax, payment_method, status) VALUES (?, ?, 0, ?, 'completed')")
-  const o1 = Number(ord.run(105, 15, 'cash').lastInsertRowid)
-  const o2 = Number(ord.run(45, 0, 'credit_card').lastInsertRowid)
-
-  const item = db.prepare('INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal) VALUES (?, ?, ?, ?, ?)')
-  item.run(o1, p1, 2, 30, 60)
-  item.run(o1, p2, 1, 45, 45)
-  item.run(o2, p2, 1, 45, 45)
 })
 
-afterAll(async () => {
-  try {
-    db.close()
-  } catch {
-    /* ignore */
-  }
-  try {
-    const dbMod = await import('../src/database.js')
-    ;(dbMod as { getDb: () => { close: () => void } }).getDb().close()
-  } catch {
-    /* ignore */
-  }
-  for (const f of [tmpDb, tmpDb + '-wal', tmpDb + '-shm']) {
-    try {
-      if (fs.existsSync(f)) fs.unlinkSync(f)
-    } catch {
-      /* ignore */
-    }
-  }
+afterAllOk(async () => {
+  await closeTestDatabase()
 })
 
-describe('CsvExportService.fetchAllOrders', () => {
+describeOk('CsvExportService.fetchAllOrders', () => {
   it('returns one record per order with grouped item lines', async () => {
     const orders = await service.fetchAllOrders()
     expect(orders).toHaveLength(2)
@@ -78,7 +74,7 @@ describe('CsvExportService.fetchAllOrders', () => {
   })
 })
 
-describe('CsvExportService.formatAsCSV', () => {
+describeOk('CsvExportService.formatAsCSV', () => {
   it('prepends a UTF-8 BOM and a single header row for empty input', () => {
     const csv = service.formatAsCSV([])
     expect(csv.startsWith('\uFEFFOrder ID,Date/Time,Items,Total Amount,Discount,Payment Method')).toBe(true)

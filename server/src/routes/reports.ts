@@ -1,47 +1,46 @@
 import { Router, Request, Response } from 'express'
-import { initDatabase, getDb } from '../database.js'
+import { query } from '../database.js'
 import { CsvExportService } from '../services/csvExportService.js'
 
-initDatabase()
-const db = getDb()
 const csvExportService = new CsvExportService()
 
 const router = Router()
 
 // GET /api/reports/daily - Daily sales report
-router.get('/daily', (req: Request, res: Response) => {
+router.get('/daily', async (req: Request, res: Response) => {
   // Get today's summary
   const today = new Date().toISOString().split('T')[0]
 
   try {
-    const todaySummary = db.prepare(`SELECT 
+    const todayResult = await query<Record<string, unknown>>(`SELECT
       COUNT(*) as order_count,
       SUM(total) as total_sales,
       AVG(total) as average_order_value
     FROM orders
-    WHERE DATE(created_at) = ?`).get(today)
+    WHERE (created_at AT TIME ZONE 'UTC')::date = $1::date`, [today])
 
     const todayData: Record<string, unknown> = {}
+    const todaySummary = todayResult.rows[0]
     if (todaySummary) {
-      todayData.order_count = Number((todaySummary as Record<string, unknown>)['order_count']) || 0
-      todayData.total_sales = Number((todaySummary as Record<string, unknown>)['total_sales']) || 0
-      todayData.average_order_value = Number((todaySummary as Record<string, unknown>)['average_order_value']) || 0
+      todayData.order_count = Number(todaySummary['order_count']) || 0
+      todayData.total_sales = Number(todaySummary['total_sales']) || 0
+      todayData.average_order_value = Number(todaySummary['average_order_value']) || 0
     }
 
     // Get last 30 days data for chart
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    const dailyData = db.prepare(`SELECT 
-      DATE(created_at) as date,
+    const dailyResult = await query<Record<string, unknown>>(`SELECT
+      to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') as date,
       COUNT(*) as order_count,
       SUM(total) as total_sales
     FROM orders
-    WHERE DATE(created_at) >= ?
-    GROUP BY DATE(created_at)
-    ORDER BY date ASC`).all(thirtyDaysAgo.toISOString().split('T')[0]) as Record<string, unknown>[]
+    WHERE (created_at AT TIME ZONE 'UTC')::date >= $1::date
+    GROUP BY to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')
+    ORDER BY date ASC`, [thirtyDaysAgo.toISOString().split('T')[0]])
 
-    const result = dailyData.map((row) => ({
+    const result = dailyResult.rows.map((row) => ({
       date: row.date,
       orderCount: Number(row.order_count) || 0,
       totalSales: Number(row.total_sales) || 0
@@ -55,23 +54,24 @@ router.get('/daily', (req: Request, res: Response) => {
 })
 
 // GET /api/reports/monthly - Monthly sales report
-router.get('/monthly', (req: Request, res: Response) => {
+router.get('/monthly', async (req: Request, res: Response) => {
   // Get last 12 months data
   const twelveMonthsAgo = new Date()
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
 
   try {
-    const monthlyData = db.prepare(`SELECT 
-      strftime('%Y-%m', created_at) as month,
-      CAST(strftime('%Y', created_at) AS INTEGER) as year,
+    const monthlyResult = await query<Record<string, unknown>>(`SELECT
+      to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM') as month,
+      to_char(created_at AT TIME ZONE 'UTC', 'YYYY')::int as year,
       SUM(total) as total_sales,
       COUNT(*) as order_count
     FROM orders
-    WHERE DATE(created_at) >= ?
-    GROUP BY strftime('%Y-%m', created_at)
-    ORDER BY month ASC`).all(twelveMonthsAgo.toISOString().split('T')[0]) as Record<string, unknown>[]
+    WHERE (created_at AT TIME ZONE 'UTC')::date >= $1::date
+    GROUP BY to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM'),
+             to_char(created_at AT TIME ZONE 'UTC', 'YYYY')
+    ORDER BY month ASC`, [twelveMonthsAgo.toISOString().split('T')[0]])
 
-    const result = monthlyData.map((row) => ({
+    const result = monthlyResult.rows.map((row) => ({
       month: row.month,
       year: Number(row.year),
       totalSales: Number(row.total_sales) || 0,
@@ -86,21 +86,21 @@ router.get('/monthly', (req: Request, res: Response) => {
 })
 
 // GET /api/reports/top-products - Top selling products
-router.get('/top-products', (req: Request, res: Response) => {
+router.get('/top-products', async (req: Request, res: Response) => {
   // Get top 10 products by quantity sold
   try {
-    const topProducts = db.prepare(`SELECT 
+    const topResult = await query<Record<string, unknown>>(`SELECT
       p.name,
       p.id,
       SUM(oi.quantity) as quantity_sold,
       SUM(oi.subtotal) as revenue
     FROM order_items oi
     JOIN products p ON oi.product_id = p.id
-    GROUP BY oi.product_id
+    GROUP BY oi.product_id, p.name, p.id
     ORDER BY quantity_sold DESC
-    LIMIT 10`).all() as Record<string, unknown>[]
+    LIMIT 10`)
 
-    const result = topProducts.map((row) => ({
+    const result = topResult.rows.map((row) => ({
       name: row.name,
       productId: row.id,
       quantity_sold: Number(row.quantity_sold) || 0,
@@ -115,22 +115,22 @@ router.get('/top-products', (req: Request, res: Response) => {
 })
 
 // GET /api/reports/top-products?limit=5 - Custom limit for top products
-router.get('/top-products/custom', (req: Request, res: Response) => {
+router.get('/top-products/custom', async (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 10
 
   try {
-    const topProducts = db.prepare(`SELECT 
+    const topResult = await query<Record<string, unknown>>(`SELECT
       p.name,
       p.barcode,
       SUM(oi.quantity) as quantity_sold,
       SUM(oi.subtotal) as revenue
     FROM order_items oi
     JOIN products p ON oi.product_id = p.id
-    GROUP BY oi.product_id
+    GROUP BY oi.product_id, p.name, p.barcode
     ORDER BY quantity_sold DESC
-    LIMIT ?`).all(limit) as Record<string, unknown>[]
+    LIMIT $1`, [limit])
 
-    const result = topProducts.map((row) => ({
+    const result = topResult.rows.map((row) => ({
       name: row.name,
       barcode: row.barcode,
       quantity_sold: Number(row.quantity_sold) || 0,

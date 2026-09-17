@@ -1,104 +1,122 @@
-import Database from 'better-sqlite3'
-import path from 'path'
-import fs from 'fs'
+import type { PoolClient } from 'pg'
+import { pool } from './db/pool.js'
 
-const dbPath = process.env.DATABASE_PATH || './data/grocery.db'
-const dbDir = path.dirname(dbPath)
-
-let db: Database.Database | null = null
-
-export function initDatabase(): Database.Database {
-  if (db) return db
-  
-  // Ensure database directory exists
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true })
-  }
-  
-  // Create or load database
-  db = new Database(dbPath)
-  
-  // Enable foreign keys and WAL mode for better concurrency
-  db.exec(`
-    PRAGMA foreign_keys = ON;
-    PRAGMA journal_mode = WAL;
-    PRAGMA synchronous = NORMAL;
-  `)
-  
-  initSchema()
-  
-  console.log('Database initialized successfully')
-  return db
+export interface QueryResultLike<T = unknown> {
+  rows: T[]
+  rowCount: number
 }
 
-export function initSchema(): void {
-  if (!db) throw new Error('Database not initialized. Call initDatabase() first.')
-  
-  // Products table
-  db.exec(`CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+export interface Queryable {
+  query<T = unknown>(text: string, params?: unknown[]): Promise<QueryResultLike<T>>
+}
+
+function asQueryable(client: PoolClient): Queryable {
+  return {
+    async query<T = unknown>(
+      text: string,
+      params: unknown[] = [],
+    ): Promise<QueryResultLike<T>> {
+      const result = await client.query(text, params)
+      return { rows: result.rows as T[], rowCount: result.rowCount ?? 0 }
+    },
+  }
+}
+
+const SCHEMA_LOCK_KEY = 42_763_390 // arbitrary app-wide key for schema init
+
+async function runStatements(
+  client: PoolClient,
+  statements: string[],
+): Promise<void> {
+  try {
+    await client.query('BEGIN')
+    for (const statement of statements) {
+      await client.query(statement)
+    }
+    await client.query('COMMIT')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  }
+}
+
+const SCHEMA_STATEMENTS = [
+  `CREATE TABLE IF NOT EXISTS products (
+    id BIGSERIAL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
-    price REAL NOT NULL,
+    price DOUBLE PRECISION NOT NULL,
     barcode TEXT UNIQUE,
     category TEXT,
     stock INTEGER NOT NULL DEFAULT 0,
     image_url TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`)
-
-  // Orders table
-  db.exec(`CREATE TABLE IF NOT EXISTS orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    total REAL NOT NULL,
-    tax REAL NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS orders (
+    id BIGSERIAL PRIMARY KEY,
+    total DOUBLE PRECISION NOT NULL,
+    tax DOUBLE PRECISION NOT NULL DEFAULT 0,
+    discount DOUBLE PRECISION NOT NULL DEFAULT 0,
     payment_method TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'completed',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`)
-
+    created_at TIMESTAMPTZ DEFAULT now()
+  )`,
   // Add discount column to existing orders tables (migration for pre-existing DBs)
-  const cols = db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]
-  if (!cols.some(c => c.name === 'discount')) {
-    db.exec('ALTER TABLE orders ADD COLUMN discount REAL NOT NULL DEFAULT 0')
-  }
-
-  // Order items table
-  db.exec(`CREATE TABLE IF NOT EXISTS order_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    order_id INTEGER NOT NULL,
-    product_id INTEGER NOT NULL,
+  `ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount DOUBLE PRECISION NOT NULL DEFAULT 0`,
+  `CREATE TABLE IF NOT EXISTS order_items (
+    id BIGSERIAL PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
     quantity INTEGER NOT NULL,
-    unit_price REAL NOT NULL,
-    subtotal REAL NOT NULL,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
-  )`)
+    unit_price DOUBLE PRECISION NOT NULL,
+    subtotal DOUBLE PRECISION NOT NULL,
+    CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    CONSTRAINT fk_order_items_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode)`,
+  `CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)`,
+  `CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)`,
+]
 
-  // Create indexes
-  db.exec('CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode)')
-  db.exec('CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)')
-  db.exec('CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)')
-  db.exec('CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)')
-
-  console.log('Database schema initialized successfully')
-}
-
-export function getDb(): Database.Database {
-  if (!db) {
-    throw new Error('Database not initialized. Call initDatabase() first.')
+export async function initDatabase(): Promise<void> {
+  const client = await pool.connect()
+  try {
+    // Serialize schema DDL across all workers/instances: concurrent CREATE
+    // statements from parallel processes race the pg catalog and can fail.
+    await client.query('SELECT pg_advisory_lock($1)', [SCHEMA_LOCK_KEY])
+    try {
+      await runStatements(client, SCHEMA_STATEMENTS)
+    } finally {
+      await client.query('SELECT pg_advisory_unlock($1)', [SCHEMA_LOCK_KEY])
+    }
+  } finally {
+    client.release()
   }
-  return db
+  console.log('Database initialized successfully')
 }
 
-export function saveDatabase(): void {
-  // better-sqlite3 automatically persists to disk, no need to manually export
-  console.log('Database saved automatically (better-sqlite3 handles persistence)')
+export async function query<T = unknown>(
+  text: string,
+  params: unknown[] = [],
+): Promise<QueryResultLike<T>> {
+  const result = await pool.query(text, params)
+  return { rows: result.rows as T[], rowCount: result.rowCount ?? 0 }
 }
 
-export default {
-  initDatabase,
-  initSchema,
-  saveDatabase,
-  getDb,
+export async function withTransaction<T>(
+  fn: (tx: Queryable) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const result = await fn(asQueryable(client))
+    await client.query('COMMIT')
+    return result
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
+  }
 }

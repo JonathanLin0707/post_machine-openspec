@@ -68,10 +68,10 @@
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │   │
 │  │  │ routes/     │  │ services/   │  │ database.ts │     │   │
 │  │  │             │  │             │  │             │     │   │
-│  │  │ orders.ts   │  │ csvExport   │  │ initDB()    │     │   │
-│  │  │ products.ts │  │             │  │ schema()     │     │   │
-│  │  │ reports.ts  │  │             │  │ getDb()      │     │   │
-│  │  │ cart.ts     │  │             │  │ saveDB()     │     │   │
+│  │  │ orders.ts   │  │ csvExport   │  │ initDatabase│     │   │
+│  │  │ products.ts │  │             │  │ query()     │     │   │
+│  │  │ reports.ts  │  │             │  │ withTx()    │     │   │
+│  │  │ cart.ts     │  │             │  │              │     │   │
 │  │  └─────────────┘  └─────────────┘  └─────────────┘     │   │
 │  │                                                           │   │
 │  │  ┌─────────────┐                                        │   │
@@ -80,9 +80,10 @@
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                  │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │  資料庫：SQLite (better-sqlite3)                         │   │
-│  │  資料目錄：data/                                         │   │
-│  │  表結構：products, orders, order_items, sales_reports   │   │
+│  │  資料庫：PostgreSQL (pg 連接池)                         │   │
+│  │  連線資訊：DATABASE_URL 環境變數                        │   │
+│  │  表結構：products, orders, order_items                  │   │
+│  │  目錄：scripts/migrate-sqlite-to-pg.ts                  │   │
 │  └─────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -151,9 +152,9 @@
 │                      │                                   │
 │                      ▼                                   │
 │  ┌─────────────────────────────────────────────────┐   │
-│  │  database.ts (better-sqlite3)                   │   │
+│  │  database.ts (PostgreSQL / pg)                  │   │
 │  │  ───────────────────────────────────────────── │   │
-│  │  products │ orders │ order_items │ reports     │   │
+│  │  products │ orders │ order_items                │   │
 │  └─────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
          │
@@ -193,7 +194,7 @@
 │  ├── Node.js 18+                                                 │
 │  ├── TypeScript 5.3+                                             │
 │  ├── Express (Web 框架)                                          │
-│  ├── better-sqlite3 (SQLite 資料庫)                              │
+│  ├── pg (PostgreSQL 連接池)                                     │
 │  └── CSV 匯出功能                                                │
 └─────────────────────────────────────────────────────────────────┘
 
@@ -234,8 +235,10 @@ grocery-pos-system/
 │   │   ├── index.ts          # 伺服器入口
 │   │   ├── routes/           # API 路由
 │   │   ├── services/         # 後端服務
-│   │   └── database.ts       # 資料庫設定
-│   ├── data/                 # SQLite 資料庫檔案
+│   │   ├── database.ts       # PostgreSQL 連線與 Schema 初始化
+│   │   └── db/pool.ts        # pg 連接池 (DATABASE_URL)
+│   ├── scripts/
+│   │   └── migrate-sqlite-to-pg.ts   # SQLite→PostgreSQL 一次性遷移
 │   ├── package.json
 │   └── tsconfig.json
 │
@@ -291,7 +294,7 @@ grocery-pos-system/
 | **POS 收銀** | `client/src/pages/POS.tsx` | 購物車、結帳、庫存扣減 |
 | **商品管理** | `client/src/pages/ProductManagement.tsx` | 商品 CRUD、分類篩選 |
 | **銷售報表** | `client/src/pages/SalesReport.tsx` | 今日/每月報表、圖表分析 |
-| **資料庫管理** | `client/src/pages/DatabaseManagement.tsx` | 匯出 SQLite/CSV |
+| **資料庫管理** | `client/src/pages/DatabaseManagement.tsx` | 匯出 JSON 備份 / CSV |
 | **庫存同步** | `client/src/store/CartContext.tsx` | 購物車與庫存同步 |
 
 ---

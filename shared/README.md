@@ -16,7 +16,7 @@
 
 | 目錄 | 說明 |
 |------|------|
-| `src/database.ts` | SQLite 資料庫初始化與 Schema 管理，使用 better-sqlite3 自動持久化 |
+| `src/database.ts` | PostgreSQL 連線管理與 Schema 初始化，提供 `query` / `withTransaction` 存取介面 |
 | `src/services/` | CSV 匯出服務，用於生成銷售報告的 CSV 檔案 |
 
 ### 共用型別 (`shared`)
@@ -30,12 +30,12 @@
 - **收銀介面**：掃描條碼或搜尋商品，加入購物車，選擇付款方式（現金、信用卡、行動支付）
 - **銷售報表**：查看每日與每月的銷售數據統計
 - **CSV 匯出**：將銷售報告導出為 CSV 檔案
-- **資料庫管理**：使用 SQLite 儲存產品、訂單等資料
+- **資料庫管理**：使用 PostgreSQL 儲存產品、訂單等資料；提供 JSON 備份匯出
 
 ## 技術棧
 
 - **前端**：React + TypeScript
-- **後端**：Node.js + better-sqlite3
+- **後端**：Node.js + PostgreSQL（pg 連接池）
 - **共用型別**：TypeScript
 
 ## 開發者設定

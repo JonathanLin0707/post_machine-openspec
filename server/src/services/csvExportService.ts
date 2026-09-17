@@ -1,14 +1,7 @@
-import { getDb } from '../database.js'
-import { Database } from 'better-sqlite3'
+import { query } from '../database.js'
 import { OrderExport } from 'shared'
 
 export class CsvExportService {
-  private db: Database
-
-  constructor() {
-    this.db = getDb()
-  }
-
   /**
    * Fetch all orders with aggregated item lines for CSV export
    */
@@ -22,14 +15,14 @@ export class CsvExportService {
       paymentMethod: string
     }
 
-    const query = `
+    const sql = `
       SELECT
         o.id as id,
-        o.created_at as datetime,
-        GROUP_CONCAT(p.name || ' (' || oi.quantity || ')', ', ') as items,
+        to_char(o.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI:SS') as datetime,
+        COALESCE(string_agg(p.name || ' (' || oi.quantity || ')', ', ' ORDER BY oi.id), '') as items,
         o.total as total,
         o.discount as discount,
-        o.payment_method as paymentMethod
+        o.payment_method as "paymentMethod"
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN products p ON p.id = oi.product_id
@@ -37,8 +30,8 @@ export class CsvExportService {
       ORDER BY o.created_at ASC, o.id ASC
     `
 
-    const rows = this.db.prepare(query).all() as OrderRow[]
-    return rows.map((row) => ({
+    const result = await query<OrderRow>(sql)
+    return result.rows.map((row) => ({
       id: String(row.id),
       datetime: String(row.datetime),
       items: row.items ? String(row.items) : '',
