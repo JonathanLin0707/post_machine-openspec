@@ -17,6 +17,22 @@ const clientDistPath = path.resolve(__dirname, '../../client/dist')
 
 let databaseReady = false
 
+function describeDbError(err: unknown): string {
+  if (err instanceof Error) {
+    const code = (err as NodeJS.ErrnoException).code
+    const prefix = code ? `${err.name}: ${err.message} (${code})` : `${err.name}: ${err.message}`
+    const errors = (err as Error & { errors?: readonly unknown[] }).errors
+    if (errors?.length) {
+      const details = errors
+        .map((e) => (e instanceof Error ? `${e.name}: ${e.message}` : String(e)))
+        .join(' | ')
+      return `${prefix} [${details}]`
+    }
+    return prefix
+  }
+  return String(err)
+}
+
 // Middleware
 app.use(cors())
 app.use(express.json())
@@ -30,7 +46,12 @@ initDatabase()
   })
   .catch((err) => {
     // Server stays up so /health can report the failure (503)
-    console.error('Database initialization failed:', err.message)
+    console.error(
+      'Database initialization failed. DATABASE_URL set:',
+      Boolean(process.env.DATABASE_URL),
+      'Error:',
+      describeDbError(err),
+    )
   })
 
 // Routes
