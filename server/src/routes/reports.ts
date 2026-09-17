@@ -147,23 +147,23 @@ router.get('/top-products/custom', (req: Request, res: Response) => {
 // POST /api/reports/csv-export - Generate and download CSV report
 router.post('/csv-export', async (req: Request, res: Response) => {
   try {
-    // Fetch all data needed for CSV export
-    const data = await csvExportService.fetchAllData()
+    // Fetch all orders needed for CSV export
+    const data = await csvExportService.fetchAllOrders()
 
-    // Format as CSV with UTF-8 encoding (no BOM)
+    // Format as CSV with UTF-8 BOM
     const csvContent = csvExportService.formatAsCSV(data)
 
     // Set headers for file download
     const today = new Date().toISOString().split('T')[0]
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-    res.setHeader('Content-Disposition', `attachment; filename="sales_report_${today}.csv"`)
+    res.setHeader('Content-Disposition', `attachment; filename="orders_${today}.csv"`)
     res.setHeader('Cache-Control', 'no-cache')
 
     // Send CSV content
     res.send(csvContent)
   } catch (error) {
     console.error('Error generating CSV export:', error)
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to generate CSV export',
       message: (error as Error).message || 'Internal server error'
     })

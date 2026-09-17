@@ -1,6 +1,6 @@
 import { getDb } from '../database.js'
 import { Database } from 'better-sqlite3'
-import { DailyReport, MonthlyReport, TopProduct } from 'shared'
+import { OrderExport } from 'shared'
 
 export class CsvExportService {
   private db: Database
@@ -10,168 +10,76 @@ export class CsvExportService {
   }
 
   /**
-   * Fetch all data needed for CSV export
+   * Fetch all orders with aggregated item lines for CSV export
    */
-  async fetchAllData(): Promise<{
-    dailyData: DailyReport[]
-    monthlyData: MonthlyReport[]
-    topProducts: TopProduct[]
-    todaySummary: { orderCount: number; totalSales: number; averageOrderValue: number }
-  }> {
-    // Fetch daily reports
-    interface DailyRow {
-      date: string
-      orderCount: number
-      totalSales: number
-      averageOrderValue: number
+  async fetchAllOrders(): Promise<OrderExport[]> {
+    interface OrderRow {
+      id: string
+      datetime: string
+      items: string | null
+      total: number
+      paymentMethod: string
     }
-    const dailyQuery = `
-      SELECT 
-        date(created_at) as date,
-        COUNT(*) as orderCount,
-        SUM(total) as totalSales,
-        AVG(total) as averageOrderValue
-      FROM orders
-      GROUP BY date(created_at)
-      ORDER BY date ASC
+
+    const query = `
+      SELECT
+        o.id as id,
+        o.created_at as datetime,
+        GROUP_CONCAT(p.name || ' (' || oi.quantity || ')', ', ') as items,
+        o.total as total,
+        o.payment_method as paymentMethod
+      FROM orders o
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN products p ON p.id = oi.product_id
+      GROUP BY o.id
+      ORDER BY o.created_at ASC, o.id ASC
     `
-    const dailyRows = this.db.prepare(dailyQuery).all() as DailyRow[]
-    const dailyData: DailyReport[] = dailyRows.map((row) => ({
-      date: String(row.date),
-      orderCount: Number(row.orderCount),
-      totalSales: Number(row.totalSales),
-      averageOrderValue: Number(row.averageOrderValue),
+
+    const rows = this.db.prepare(query).all() as OrderRow[]
+    return rows.map((row) => ({
+      id: String(row.id),
+      datetime: String(row.datetime),
+      items: row.items ? String(row.items) : '',
+      total: Number(row.total),
+      paymentMethod: String(row.paymentMethod),
     }))
-
-    // Fetch monthly reports
-    interface MonthlyRow {
-      month: string
-      year: number
-      totalSales: number
-      orderCount: number
-    }
-    const monthlyQuery = `
-      SELECT 
-        strftime('%Y-%m', created_at) as month,
-        strftime('%Y', created_at) as year,
-        SUM(total) as totalSales,
-        COUNT(*) as orderCount
-      FROM orders
-      GROUP BY strftime('%Y-%m', created_at)
-      ORDER BY month ASC
-    `
-    const monthlyRows = this.db.prepare(monthlyQuery).all() as MonthlyRow[]
-    const monthlyData: MonthlyReport[] = monthlyRows.map((row) => ({
-      month: String(row.month),
-      year: Number(row.year),
-      totalSales: Number(row.totalSales),
-      orderCount: Number(row.orderCount),
-    }))
-
-    // Fetch top products
-    const topProductsQuery = `
-      SELECT 
-        p.id as productId,
-        p.name,
-        SUM(oi.quantity) as quantitySold,
-        SUM(oi.subtotal) as revenue
-      FROM products p
-      JOIN order_items oi ON p.id = oi.product_id
-      GROUP BY p.id
-      ORDER BY quantitySold DESC
-      LIMIT 10
-    `
-    interface TopProductRow {
-      productId: string
-      name: string
-      quantitySold: number
-      revenue: number
-    }
-    const topProductsRows = this.db.prepare(topProductsQuery).all() as TopProductRow[]
-    const topProducts: TopProduct[] = topProductsRows.map((row) => ({
-      productId: String(row.productId),
-      name: String(row.name),
-      quantitySold: Number(row.quantitySold),
-      revenue: Number(row.revenue),
-    }))
-
-    // Fetch today summary
-    const todayQuery = `
-      SELECT 
-        COUNT(*) as orderCount,
-        SUM(total) as totalSales,
-        AVG(total) as averageOrderValue
-      FROM orders
-      WHERE date(created_at) = date('now')
-    `
-    interface TodayRow {
-      orderCount: number
-      totalSales: number
-      averageOrderValue: number
-    }
-    const todayRow = this.db.prepare(todayQuery).get() as TodayRow
-    const todaySummary: { orderCount: number; totalSales: number; averageOrderValue: number } = {
-      orderCount: Number(todayRow.orderCount) || 0,
-      totalSales: Number(todayRow.totalSales) || 0,
-      averageOrderValue: Number(todayRow.averageOrderValue) || 0,
-    }
-
-    return {
-      dailyData,
-      monthlyData,
-      topProducts,
-      todaySummary,
-    }
   }
 
   /**
-   * Format data as CSV string
+   * Quote and escape a CSV cell when it contains special characters
    */
-  formatAsCSV(data: {
-    dailyData: DailyReport[]
-    monthlyData: MonthlyReport[]
-    topProducts: TopProduct[]
-    todaySummary: { orderCount: number; totalSales: number; averageOrderValue: number }
-  }): string {
+  private csvCell(value: string): string {
+    if (/[",\n\r]/.test(value)) {
+      return `"${value.replace(/"/g, '""')}"`
+    }
+    return value
+  }
+
+  /**
+   * Format orders as CSV string with a UTF-8 BOM prefix
+   */
+  formatAsCSV(orders: OrderExport[]): string {
     const lines: string[] = []
+    lines.push('Order ID,Date/Time,Items,Total Amount,Payment Method')
 
-    // Daily report section
-    lines.push('=== Daily Sales Report ===')
-    lines.push('Date,Order Count,Total Sales,Average Order Value')
-    data.dailyData.forEach((report) => {
-      lines.push(`${report.date},${report.orderCount},${report.totalSales},${report.averageOrderValue}`)
+    orders.forEach((order) => {
+      lines.push([
+        order.id,
+        order.datetime.replace(' ', 'T'),
+        this.csvCell(order.items),
+        Number(order.total).toFixed(2),
+        order.paymentMethod,
+      ].join(','))
     })
 
-    // Monthly report section
-    lines.push('')
-    lines.push('=== Monthly Sales Report ===')
-    lines.push('Month,Year,Total Sales,Order Count')
-    data.monthlyData.forEach((report) => {
-      lines.push(`${report.month},${report.year},${report.totalSales},${report.orderCount}`)
-    })
-
-    // Top products section
-    lines.push('')
-    lines.push('=== Top Products ===')
-    lines.push('Product ID,Product Name,Quantity Sold,Revenue')
-    data.topProducts.forEach((product) => {
-      lines.push(`${product.productId},"${product.name}",${product.quantitySold},${product.revenue}`)
-    })
-
-    // Today summary section
-    lines.push('')
-    lines.push('=== Today Summary ===')
-    lines.push(`Order Count,Total Sales,Average Order Value`)
-    lines.push(`${data.todaySummary.orderCount},${data.todaySummary.totalSales},${data.todaySummary.averageOrderValue}`)
-
-    return lines.join('\n')
+    return '\uFEFF' + lines.join('\r\n')
   }
 
   /**
    * Export data to CSV file
    */
-  async exportToCSV(filename: string = 'sales_report.csv'): Promise<void> {
-    const data = await this.fetchAllData()
+  async exportToCSV(filename: string = 'orders.csv'): Promise<void> {
+    const data = await this.fetchAllOrders()
     const csvContent = this.formatAsCSV(data)
 
     // In a real implementation, you would write to a file

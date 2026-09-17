@@ -30,6 +30,14 @@ export interface Order {
   items: OrderItem[];
 }
 
+export interface OrderExport {
+  id: string;
+  datetime: string;
+  items: string;
+  total: number;
+  paymentMethod: string;
+}
+
 export interface CartItem {
   productId: string;
   name: string;

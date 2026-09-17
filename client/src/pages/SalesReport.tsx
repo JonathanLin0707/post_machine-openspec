@@ -101,16 +101,31 @@ export default function SalesReport() {
       const response = await api.post('/reports/csv-export', null, {
         responseType: 'blob',
       })
-      const url = window.URL.createObjectURL(response.data)
+      const blob = response.data as Blob
+      const text = await blob.text()
+      const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '')
+
+      // Header-only CSV means there are no orders to export
+      if (lines.length <= 1) {
+        alert('暫無訂單資料可匯出')
+        return
+      }
+
+      const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `sales_report_${new Date().toISOString().split('T')[0]}.csv`)
+      link.setAttribute('download', `orders_${new Date().toISOString().split('T')[0]}.csv`)
       document.body.appendChild(link)
       link.click()
       link.remove()
     } catch (error: unknown) {
       console.error('Failed to export CSV:', error)
-      alert((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '匯出 CSV 失敗，請稍後再試')
+      const status = (error as { response?: { status?: number } })?.response?.status
+      if (status === 500) {
+        alert('匯出 CSV 失敗：伺服器錯誤')
+      } else {
+        alert('匯出 CSV 失敗，請稍後再試')
+      }
     } finally {
       setLoading(false)
     }
