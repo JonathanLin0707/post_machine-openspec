@@ -7,7 +7,7 @@ export async function exportDatabase(): Promise<void> {
   })
 
   const blob = new Blob([response.data], {
-    type: 'application/x-sqlite3',
+    type: 'application/json',
   })
 
   const url = window.URL.createObjectURL(blob)
@@ -17,7 +17,7 @@ export async function exportDatabase(): Promise<void> {
   link.download = `grocery_${new Date()
     .toISOString()
     .slice(0, 19)
-    .replace(/:/g, '-')}.db`
+    .replace(/:/g, '-')}.json`
 
   document.body.appendChild(link)
   link.click()
