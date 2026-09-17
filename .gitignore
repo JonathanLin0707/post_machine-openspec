@@ -1,9 +1,12 @@
 .opencode/
 node_modules/
+server/data/grocery.db
 server/data/grocery.db-shm
 server/data/grocery.db-wal
+data/grocery.db
 data/grocery.db-shm
 data/grocery.db-wal
+report-e2e-test-grocery.db
 e2e-test-grocery.db
 .smallcode/
 .code-graph/
