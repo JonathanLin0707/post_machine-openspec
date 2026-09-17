@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 import { DailyReport, MonthlyReport, TopProduct } from 'shared'
+import ExportConfirmationDialog from '../components/ExportConfirmationDialog/ExportConfirmationDialog'
 
 export default function SalesReport() {
   const [dailyData, setDailyData] = useState<DailyReport[]>([])
@@ -12,6 +13,9 @@ export default function SalesReport() {
     averageOrderValue: 0
   })
   const [loading, setLoading] = useState(false)
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const isExportingRef = useRef(false)
 
   useEffect(() => {
     fetchReports()
@@ -96,38 +100,50 @@ export default function SalesReport() {
   }
 
   const exportCSV = async () => {
+    if (isExportingRef.current) return
+    isExportingRef.current = true
+    setIsExporting(true)
     try {
-      setLoading(true)
-      const response = await api.post('/reports/csv-export', null, {
-        responseType: 'blob',
-      })
-      const blob = response.data as Blob
-      const text = await blob.text()
-      const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '')
+      try {
+        setLoading(true)
+        const response = await api.post('/reports/csv-export', null, {
+          responseType: 'blob',
+        })
+        const blob = response.data as Blob
+        const text = await blob.text()
+        const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '')
 
-      // Header-only CSV means there are no orders to export
-      if (lines.length <= 1) {
-        alert('暫無訂單資料可匯出')
-        return
-      }
+        // Header-only CSV means there are no orders to export
+        if (lines.length <= 1) {
+          alert('暫無訂單資料可匯出')
+          return
+        }
 
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', `orders_${new Date().toISOString().split('T')[0]}.csv`)
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-    } catch (error: unknown) {
-      console.error('Failed to export CSV:', error)
-      const status = (error as { response?: { status?: number } })?.response?.status
-      if (status === 500) {
-        alert('匯出 CSV 失敗：伺服器錯誤')
-      } else {
-        alert('匯出 CSV 失敗，請稍後再試')
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', `orders_${new Date().toISOString().split('T')[0]}.csv`)
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        if (typeof window.URL.revokeObjectURL === 'function') {
+          window.URL.revokeObjectURL(url)
+        }
+      } catch (error: unknown) {
+        console.error('Failed to export CSV:', error)
+        const status = (error as { response?: { status?: number } })?.response?.status
+        if (status === 500) {
+          alert('匯出 CSV 失敗：伺服器錯誤')
+        } else {
+          alert('匯出 CSV 失敗，請稍後再試')
+        }
+      } finally {
+        setLoading(false)
       }
     } finally {
-      setLoading(false)
+      isExportingRef.current = false
+      setIsExporting(false)
+      setIsExportDialogOpen(false)
     }
   }
 
@@ -138,7 +154,7 @@ export default function SalesReport() {
         <div className="bg-white rounded-lg shadow-sm p-4 mb-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">銷售報表</h1>
           <button
-            onClick={exportCSV}
+            onClick={() => setIsExportDialogOpen(true)}
             className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-md"
           >
             📥 匯出 CSV
@@ -255,6 +271,17 @@ export default function SalesReport() {
           </button>
         </div>
       </div>
+      {isExportDialogOpen && (
+        <ExportConfirmationDialog
+          title="匯出 CSV 確認"
+          message="確定要匯出所有訂單的 CSV 檔案嗎？"
+          confirmLabel="確認"
+          cancelLabel="取消"
+          isProcessing={isExporting}
+          onConfirm={exportCSV}
+          onCancel={() => setIsExportDialogOpen(false)}
+        />
+      )}
     </div>
   )
 }

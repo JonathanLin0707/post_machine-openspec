@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import './Layout.css'
 import { exportDatabase } from '../services/databaseService'
+import ExportConfirmationDialog from './ExportConfirmationDialog/ExportConfirmationDialog'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -10,13 +11,25 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [activeTab] = useState('pos')
   const location = useLocation()
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const isExportingRef = useRef(false)
+
+  const openExportDialog = () => setIsExportDialogOpen(true)
 
   const handleExportDatabase = async () => {
+    if (isExportingRef.current) return
+    isExportingRef.current = true
+    setIsExporting(true)
     try {
       await exportDatabase()
     } catch (error) {
       console.error('Database export failed:', error)
       alert('資料庫匯出失敗')
+    } finally {
+      isExportingRef.current = false
+      setIsExporting(false)
+      setIsExportDialogOpen(false)
     }
   }
 
@@ -51,7 +64,7 @@ export default function Layout({ children }: LayoutProps) {
 
               <button
                 type="button"
-                onClick={handleExportDatabase}
+                onClick={openExportDialog}
                 className="inline-flex items-center px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition-all duration-200"
               >
                 💾 匯出資料庫
@@ -63,6 +76,17 @@ export default function Layout({ children }: LayoutProps) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
+      {isExportDialogOpen && (
+        <ExportConfirmationDialog
+          title="匯出資料庫確認"
+          message="確定要將目前的資料庫匯出為檔案嗎？"
+          confirmLabel="確認"
+          cancelLabel="取消"
+          isProcessing={isExporting}
+          onConfirm={handleExportDatabase}
+          onCancel={() => setIsExportDialogOpen(false)}
+        />
+      )}
     </div>
   )
 }
