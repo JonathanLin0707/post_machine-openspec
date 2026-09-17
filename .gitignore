@@ -11,3 +11,4 @@ client/dist/
 server/dist/
 .openspec-store/
 openspec/
+data/

@@ -35,6 +35,7 @@ export interface OrderExport {
   datetime: string;
   items: string;
   total: number;
+  discount: number;
   paymentMethod: string;
 }
 

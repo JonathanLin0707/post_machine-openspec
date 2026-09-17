@@ -7,12 +7,12 @@
 ## Requirements
 
 ### Requirement: System generates CSV export for individual orders
-The system SHALL generate a CSV file containing a list of all individual orders when the user requests CSV export from the SalesReport page.
+The system SHALL generate a CSV file containing a list of all individual orders — including each order's discount amount — when the user requests CSV export from the SalesReport page.
 
 #### Scenario: User clicks CSV export button
 - **WHEN** user clicks "📥 匯出 CSV" button in SalesReport.tsx
 - **THEN** system calls `/api/reports/csv-export` endpoint and returns CSV file with all order records
-- **AND** CSV file contains headers for: Order ID, Date/Time, Items (product names and quantities), Total Amount, Payment Method
+- **AND** CSV file contains headers for: Order ID, Date/Time, Items (product names and quantities), Total Amount, Discount, Payment Method
 
 #### Scenario: Successful CSV download
 - **WHEN** backend successfully queries all orders from the database
@@ -33,6 +33,11 @@ The system SHALL generate a CSV file containing a list of all individual orders 
 - **WHEN** network connection fails or request times out
 - **THEN** system catches error and logs to console
 - **AND** frontend displays user-friendly error message with retry option
+
+#### Scenario: Export includes discount amount
+- **WHEN** an order in the database was created with a non-zero discount
+- **THEN** the order's CSV row SHALL include a Discount Amount column equal to the stored discount, formatted with 2 decimals
+- **AND** the Total Amount column SHALL remain the already-discounted order total
 
 ### Requirement: CSV file format compliance for order export
 The system SHALL ensure exported CSV files follow standard CSV formatting conventions for order data.

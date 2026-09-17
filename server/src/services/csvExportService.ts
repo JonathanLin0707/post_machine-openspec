@@ -18,6 +18,7 @@ export class CsvExportService {
       datetime: string
       items: string | null
       total: number
+      discount: number
       paymentMethod: string
     }
 
@@ -27,6 +28,7 @@ export class CsvExportService {
         o.created_at as datetime,
         GROUP_CONCAT(p.name || ' (' || oi.quantity || ')', ', ') as items,
         o.total as total,
+        o.discount as discount,
         o.payment_method as paymentMethod
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -41,6 +43,7 @@ export class CsvExportService {
       datetime: String(row.datetime),
       items: row.items ? String(row.items) : '',
       total: Number(row.total),
+      discount: Number(row.discount) || 0,
       paymentMethod: String(row.paymentMethod),
     }))
   }
@@ -60,7 +63,7 @@ export class CsvExportService {
    */
   formatAsCSV(orders: OrderExport[]): string {
     const lines: string[] = []
-    lines.push('Order ID,Date/Time,Items,Total Amount,Payment Method')
+    lines.push('Order ID,Date/Time,Items,Total Amount,Discount,Payment Method')
 
     orders.forEach((order) => {
       lines.push([
@@ -68,6 +71,7 @@ export class CsvExportService {
         order.datetime.replace(' ', 'T'),
         this.csvCell(order.items),
         Number(order.total).toFixed(2),
+        Number(order.discount).toFixed(2),
         order.paymentMethod,
       ].join(','))
     })
