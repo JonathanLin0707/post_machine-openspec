@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import './Layout.css'
 import { exportDatabase } from '../services/databaseService'
 import ExportConfirmationDialog from './ExportConfirmationDialog/ExportConfirmationDialog'
+import ImportDialog from './ImportDialog/ImportDialog'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -12,10 +13,16 @@ export default function Layout({ children }: LayoutProps) {
   const [activeTab] = useState('pos')
   const location = useLocation()
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const isExportingRef = useRef(false)
 
   const openExportDialog = () => setIsExportDialogOpen(true)
+
+  const handleImportSuccess = () => {
+    setIsImportDialogOpen(false)
+    alert('資料庫匯入成功')
+  }
 
   const handleExportDatabase = async () => {
     if (isExportingRef.current) return
@@ -69,6 +76,13 @@ export default function Layout({ children }: LayoutProps) {
               >
                 💾 匯出資料庫
               </button>
+              <button
+                type="button"
+                onClick={() => setIsImportDialogOpen(true)}
+                className="inline-flex items-center px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 transition-all duration-200"
+              >
+                📥 匯入資料庫
+              </button>
             </div>
           </div>
         </div>
@@ -85,6 +99,12 @@ export default function Layout({ children }: LayoutProps) {
           isProcessing={isExporting}
           onConfirm={handleExportDatabase}
           onCancel={() => setIsExportDialogOpen(false)}
+        />
+      )}
+      {isImportDialogOpen && (
+        <ImportDialog
+          onCancel={() => setIsImportDialogOpen(false)}
+          onImported={handleImportSuccess}
         />
       )}
     </div>

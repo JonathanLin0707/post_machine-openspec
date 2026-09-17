@@ -1,7 +1,13 @@
 import express from 'express'
 import { query } from '../database.js'
+import {
+  DatabaseImportService,
+  HttpError,
+} from '../services/databaseImportService.js'
 
 const router = express.Router()
+
+const importService = new DatabaseImportService()
 
 router.get('/export', async (req, res) => {
   try {
@@ -32,6 +38,20 @@ router.get('/export', async (req, res) => {
     res.status(500).json({
       error: 'Failed to export database',
     })
+  }
+})
+
+router.post('/import', async (req, res) => {
+  try {
+    const summary = await importService.importBackup(req.body?.mode, req.body?.backup)
+    res.json({ success: true, ...summary })
+  } catch (error) {
+    if (error instanceof HttpError) {
+      res.status(error.status).json({ error: error.message })
+      return
+    }
+    console.error('Database import error:', error)
+    res.status(500).json({ error: 'Failed to import database' })
   }
 })
 

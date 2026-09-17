@@ -1,4 +1,7 @@
+import { isAxiosError } from 'axios'
 import api from './api'
+
+export type ImportMode = 'replace' | 'merge'
 
 export async function exportDatabase(): Promise<void> {
   const response = await api.get('/database/export', {
@@ -24,4 +27,20 @@ export async function exportDatabase(): Promise<void> {
   link.remove()
 
   window.URL.revokeObjectURL(url)
+}
+
+export async function importDatabase(file: File, mode: ImportMode): Promise<void> {
+  const text = await file.text()
+  const backup = JSON.parse(text)
+  await api.post('/database/import', { mode, backup }, { timeout: 60000 })
+}
+
+export function extractImportError(error: unknown): string {
+  if (isAxiosError(error)) {
+    const serverMessage = error.response?.data?.error
+    if (typeof serverMessage === 'string') {
+      return serverMessage
+    }
+  }
+  return '資料庫匯入失敗'
 }
