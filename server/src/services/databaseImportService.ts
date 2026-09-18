@@ -194,6 +194,64 @@ async function resyncSequences(tx: Queryable): Promise<void> {
   await tx.query(RESYNC_SQL('order_items'))
 }
 
+function distinctIds(rows: JsonRow[], key: string): Array<number | string> {
+  const seen = new Set<number | string>()
+  for (const row of rows) {
+    seen.add(row[key] as number | string)
+  }
+  return [...seen]
+}
+
+async function findMissingReferences(
+  tx: Queryable,
+  table: 'products' | 'orders',
+  referencedIds: Array<number | string>,
+  backupCandidates: Array<unknown>,
+  consultDatabase: boolean,
+): Promise<Array<number | string>> {
+  const present = new Set(backupCandidates.map((id) => String(id)))
+  const toCheck = referencedIds.filter((id) => !present.has(String(id)))
+  if (toCheck.length === 0 || !consultDatabase) return toCheck
+
+  const result = await tx.query<{ id: unknown }>(
+    `SELECT id FROM ${table} WHERE id = ANY($1::bigint[])`,
+    [toCheck],
+  )
+  const existing = new Set(result.rows.map((row) => String(row.id)))
+  return toCheck.filter((id) => !existing.has(String(id)))
+}
+
+/**
+ * order_items 的 FK 會同時參考 products 與 orders。備份可能引用目前
+ * DB（或備份自身）不存在的 id，直接 INSERT 會觸發 FK 違反並以泛型 500
+ * 失敗。在批次寫入前預先比對，缺失即拋出可讀的 400 訊息。
+ */
+async function assertNoDanglingReferences(tx: Queryable, backup: Backup, mode: ImportMode): Promise<void> {
+  const consultDatabase = mode === 'merge'
+
+  const missingProducts = await findMissingReferences(
+    tx,
+    'products',
+    distinctIds(backup.orderItems, 'product_id'),
+    backup.products.map((row) => row.id),
+    consultDatabase,
+  )
+  if (missingProducts.length > 0) {
+    throw new HttpError(400, `order_items 引用不存在的 product id: ${missingProducts.map(String).join(', ')}`)
+  }
+
+  const missingOrders = await findMissingReferences(
+    tx,
+    'orders',
+    distinctIds(backup.orderItems, 'order_id'),
+    backup.orders.map((row) => row.id),
+    consultDatabase,
+  )
+  if (missingOrders.length > 0) {
+    throw new HttpError(400, `order_items 引用不存在的 order id: ${missingOrders.map(String).join(', ')}`)
+  }
+}
+
 export type TransactionRunner = (
   fn: (tx: Queryable) => Promise<unknown>,
 ) => Promise<unknown>
@@ -221,6 +279,8 @@ export class DatabaseImportService {
       if (mode === 'replace') {
         await tx.query('TRUNCATE products, orders, order_items RESTART IDENTITY CASCADE')
       }
+
+      await assertNoDanglingReferences(tx, backup, mode)
 
       const productSql = mode === 'merge' ? UPSERT_PRODUCT_SQL : INSERT_PRODUCT_SQL
       const orderSql = mode === 'merge' ? UPSERT_ORDER_SQL : INSERT_ORDER_SQL

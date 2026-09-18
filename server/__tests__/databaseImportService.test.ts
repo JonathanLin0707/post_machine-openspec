@@ -24,7 +24,7 @@ function makeBackup(
   }
 }
 
-function makeHarness() {
+function makeHarness(rowsBySql: Record<string, Array<{ id: unknown }>> = {}) {
   const calls: Call[] = []
   let failOn: string | null = null
 
@@ -33,6 +33,12 @@ function makeHarness() {
       calls.push({ text, params })
       if (failOn && text.includes(failOn)) {
         throw new Error('db boom')
+      }
+      for (const needle of Object.keys(rowsBySql)) {
+        if (text.includes(needle)) {
+          const rows = rowsBySql[needle]
+          return { rows, rowCount: rows.length }
+        }
       }
       return { rows: [], rowCount: 0 }
     },
@@ -179,6 +185,77 @@ describe('databaseImportService merge 模式', () => {
 
     expect(calls.filter((c) => c.text === 'COMMIT')).toHaveLength(1)
     expect(calls.filter((c) => c.text === 'ROLLBACK')).toHaveLength(0)
+  })
+})
+
+describe('databaseImportService 引用完整性', () => {
+  it('merge 遇到 order_items 引用不存在的 product 時拋 400', async () => {
+    const { calls, service } = makeHarness()
+    const backup = makeBackup(
+      [{ id: '1', name: 'A', price: 10 }],
+      [{ id: '2', total: 10, payment_method: 'cash' }],
+      [{ id: '3', order_id: '2', product_id: '99', quantity: 1, unit_price: 10, subtotal: 10 }],
+    )
+
+    await expectHttpError(service.importBackup('merge', backup), 400)
+    expect(calls.map((c) => c.text)).toContain('ROLLBACK')
+  })
+
+  it('replace 遇到 order_items 引用不存在的 order 時拋 400', async () => {
+    const { calls, service } = makeHarness()
+    const backup = makeBackup(
+      [{ id: '1', name: 'A', price: 10 }],
+      [],
+      [{ id: '3', order_id: '2', product_id: '1', quantity: 1, unit_price: 10, subtotal: 10 }],
+    )
+
+    await expectHttpError(service.importBackup('replace', backup), 400)
+    expect(calls.map((c) => c.text)).toContain('ROLLBACK')
+  })
+
+  it('replace 模式不查詢 DB，純 JS 比對即攔截懸空引用（DB 已 TRUNCATE）', async () => {
+    const { calls, service } = makeHarness({
+      'FROM products WHERE id = ANY': [{ id: '99' }],
+    })
+    const backup = makeBackup(
+      [],
+      [{ id: '2', total: 10, payment_method: 'cash' }],
+      [{ id: '3', order_id: '2', product_id: '99', quantity: 1, unit_price: 10, subtotal: 10 }],
+    )
+
+    await expectHttpError(service.importBackup('replace', backup), 400)
+
+    expect(calls.filter((c) => c.text.includes('ANY($1::bigint[])'))).toHaveLength(0)
+  })
+
+  it('merge 當被引用 id 已存在於現有 DB 時引用檢查通過', async () => {
+    const { calls, service } = makeHarness({
+      'FROM products WHERE id = ANY': [{ id: '99' }],
+    })
+    const backup = makeBackup(
+      [],
+      [{ id: '2', total: 10, payment_method: 'cash' }],
+      [{ id: '3', order_id: '2', product_id: '99', quantity: 1, unit_price: 10, subtotal: 10 }],
+    )
+
+    const summary = await service.importBackup('merge', backup)
+
+    expect(summary).toEqual({ products: 0, orders: 1, orderItems: 1 })
+    expect(calls.filter((c) => c.text === 'ROLLBACK')).toHaveLength(0)
+  })
+
+  it('merge 自帶完整參照的備份不額外發查詢，直接寫入', async () => {
+    const { calls, service } = makeHarness()
+    const backup = makeBackup(
+      [{ id: '7', name: 'A', price: 10 }],
+      [{ id: '8', total: 10, payment_method: 'cash' }],
+      [{ id: '9', order_id: '8', product_id: '7', quantity: 1, unit_price: 10, subtotal: 10 }],
+    )
+
+    await service.importBackup('merge', backup)
+
+    const withAny = calls.filter((c) => c.text.includes('ANY($1::bigint[])'))
+    expect(withAny).toHaveLength(0)
   })
 })
 

@@ -60,6 +60,10 @@ describe('databaseService.extractImportError', () => {
     expect(extractImportError(serverError('備份格式不正確'))).toBe('備份格式不正確')
   })
 
+  it('returns a JSON-specific message when the backup file is malformed', () => {
+    expect(extractImportError(new SyntaxError('Unexpected token n in JSON'))).toBe('備份檔不是有效的 JSON 格式')
+  })
+
   it('falls back to a default message otherwise', () => {
     expect(extractImportError(new Error('boom'))).toBe('資料庫匯入失敗')
     expect(extractImportError(null)).toBe('資料庫匯入失敗')

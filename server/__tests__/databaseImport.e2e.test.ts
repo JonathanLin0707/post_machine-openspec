@@ -279,7 +279,7 @@ describeOk('POST /api/database/import — 格式驗證', () => {
 })
 
 describeOk('POST /api/database/import — 回滾測試', () => {
-  it('FK 違反時整體回滾，資料維持匯入前狀態', async () => {
+  it('懸空引用於寫入前回傳 400，資料維持匯入前狀態', async () => {
     const p1 = await seedProduct('不會被删', 10)
     await seedProduct('第二個', 20)
     await seedOrder('cash', [{ productId: p1, quantity: 1, unitPrice: 10 }])
@@ -298,8 +298,8 @@ describeOk('POST /api/database/import — 回滾測試', () => {
         ),
       })
 
-    expect(res.status).toBe(500)
-    expect(res.body.error).toMatch(/Failed/)
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/不存在的 product id/)
     expect(await productCount()).toBe(origProductCount)
     expect(await orderCount()).toBe(origOrderCount)
     expect(await orderItemCount()).toBe(origOrderItemCount)

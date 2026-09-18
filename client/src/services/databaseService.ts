@@ -42,5 +42,8 @@ export function extractImportError(error: unknown): string {
       return serverMessage
     }
   }
+  if (error instanceof SyntaxError) {
+    return '備份檔不是有效的 JSON 格式'
+  }
   return '資料庫匯入失敗'
 }
