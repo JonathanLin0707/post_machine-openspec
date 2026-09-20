@@ -83,9 +83,12 @@ describeOk('Discount end-to-end', () => {
 
     const topRes = await request(app).get('/api/reports/top-products')
     expect(topRes.status).toBe(200)
-    const topProducts = topRes.body as { name: string; quantity_sold: number }[]
+    const topProducts = topRes.body as { name: string; quantity_sold: number; revenue: number }[]
     expect(topProducts.length).toBeGreaterThan(0)
     expect(topProducts[0].name).toBe('Test Product E2E')
+    // Per order-discount spec, top-product revenue SHALL be computed from the
+    // stored (discounted) total: 200 subtotal with 50 discount -> revenue 150
+    expect(topProducts[0].revenue).toBe(150)
   })
 
   it('rejects discount exceeding subtotal with 400', async () => {

@@ -1,34 +1,21 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
+import type { Order as SharedOrder, OrderItem as SharedOrderItem } from 'shared'
 
-interface OrderItem {
-  id: string
-  productId: string
+// 後端回傳 snake_case＋items_json（見 server/src/routes/orders.ts）。
+// Domain 欄位以 shared 為單一來源，此處僅聲明傳輸層差異。
+interface OrderItem extends Omit<SharedOrderItem, 'orderId'> {
   name: string
-  quantity: number
-  unitPrice: number
-  subtotal: number
 }
 
-interface Order {
-  id: string // 改為 string type
-  total: number
-  discount: number
-  tax: number
+interface Order extends Omit<SharedOrder, 'paymentMethod' | 'status' | 'createdAt' | 'items'> {
   payment_method: string
   status: string
   created_at: string
   items_json: OrderItem[]
 }
 
-interface ApiResponseOrder {
-  id: string // 改為 string type
-  total: number
-  discount: number
-  tax: number
-  payment_method: string
-  status: string
-  created_at: string
+interface ApiResponseOrder extends Omit<Order, 'items_json'> {
   items_json: string | OrderItem[]
 }
 

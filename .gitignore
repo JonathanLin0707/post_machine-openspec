@@ -16,4 +16,3 @@ e2e-test-grocery.db
 client/dist/
 server/dist/
 .openspec-store/
-openspec/

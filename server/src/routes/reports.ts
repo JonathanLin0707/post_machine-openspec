@@ -87,15 +87,30 @@ router.get('/monthly', async (req: Request, res: Response) => {
 
 // GET /api/reports/top-products - Top selling products
 router.get('/top-products', async (req: Request, res: Response) => {
-  // Get top 10 products by quantity sold
+  // Get top 10 products by quantity sold.
+  // Per openspec/specs/order-discount/spec.md, revenue figures SHALL be computed
+  // from each order's stored (already discounted) total, so the order discount
+  // is allocated across its lines proportionally to line subtotal.
   try {
     const topResult = await query<Record<string, unknown>>(`SELECT
       p.name,
       p.id,
       SUM(oi.quantity) as quantity_sold,
-      SUM(oi.subtotal) as revenue
+      SUM(
+        CASE
+          WHEN order_totals.subtotal > 0
+          THEN oi.subtotal * (o.total / order_totals.subtotal)
+          ELSE 0
+        END
+      ) as revenue
     FROM order_items oi
     JOIN products p ON oi.product_id = p.id
+    JOIN orders o ON oi.order_id = o.id
+    JOIN (
+      SELECT order_id, SUM(subtotal) AS subtotal
+      FROM order_items
+      GROUP BY order_id
+    ) AS order_totals ON order_totals.order_id = o.id
     GROUP BY oi.product_id, p.name, p.id
     ORDER BY quantity_sold DESC
     LIMIT 10`)
@@ -123,9 +138,21 @@ router.get('/top-products/custom', async (req: Request, res: Response) => {
       p.name,
       p.barcode,
       SUM(oi.quantity) as quantity_sold,
-      SUM(oi.subtotal) as revenue
+      SUM(
+        CASE
+          WHEN order_totals.subtotal > 0
+          THEN oi.subtotal * (o.total / order_totals.subtotal)
+          ELSE 0
+        END
+      ) as revenue
     FROM order_items oi
     JOIN products p ON oi.product_id = p.id
+    JOIN orders o ON oi.order_id = o.id
+    JOIN (
+      SELECT order_id, SUM(subtotal) AS subtotal
+      FROM order_items
+      GROUP BY order_id
+    ) AS order_totals ON order_totals.order_id = o.id
     GROUP BY oi.product_id, p.name, p.barcode
     ORDER BY quantity_sold DESC
     LIMIT $1`, [limit])

@@ -1,13 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { CartItem as SharedCartItem } from 'shared'
 
-interface CartItem {
-  productId: string
-  name: string
-  price: number
-  quantity: number
+// 購物車列：shared CartItem 為單一來源，此處僅加庫存上限用的 stock。
+interface CartItem extends SharedCartItem {
   stock?: number
-  subtotal: number
 }
 
 interface CartStore {

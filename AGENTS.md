@@ -19,8 +19,11 @@ If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is 
 ## 指令（根目錄，npm workspaces）
 - `npm install` / `npm run dev` / `npm run build --workspaces`
 - `npm run lint --workspace=client|server`（`--max-warnings 0`，零警告才算過）
-- 後端測試：`npx vitest run server/__tests__`（需 live PostgreSQL，見下）
-- 前端測試：在 `client/` 下跑 `npx vitest run`
+
+## Verification
+- npm run lint
+- npm run test
+- npm run build
 
 ## 型別單一來源
 - `shared/types.ts` 是唯一型別來源；改完跑 `npm run build --workspace=shared`。
@@ -46,8 +49,8 @@ If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is 
 - 報表（daily/monthly/top-products）一律讀已存 `total`，不重算。
 
 ## 規格優先
-- 改行為前先讀 `openspec/specs/<scope>/spec.md`（共 10 個 scope）；spec 與程式衝突時以 spec 為準，
+- 改行為前先讀 `openspec/specs/<scope>/spec.md`；spec 與程式衝突時以 spec 為準，
   並同步更新 spec。
 
 **Important**
-- 如果不確定架構，先閱讀 architecture.md。
+- 如果不確定架構，先閱讀 ARCHITECTURE.md。
