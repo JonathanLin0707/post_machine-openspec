@@ -298,5 +298,3 @@ grocery-pos-system/
 | **庫存同步** | `client/src/store/CartContext.tsx` | 購物車與庫存同步 |
 
 ---
-
-這個架構圖展示了整個專案的完整結構與資料流程。如果您需要針對某個特定模組進行更詳細的說明，請告訴我！
