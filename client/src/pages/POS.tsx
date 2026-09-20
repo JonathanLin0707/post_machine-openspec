@@ -188,9 +188,9 @@ export default function POS({ onCheckout }: POSProps) {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-gray-100">
       {/* Left Panel - Product List */}
-      <div className="w-2/3 flex flex-col">
+      <div className="w-full md:w-2/3 flex flex-col">
         {/* Search and Filter Header */}
         <div className="bg-white p-4 shadow-sm border-b">
           <div className="flex gap-3 mb-4">
@@ -216,7 +216,7 @@ export default function POS({ onCheckout }: POSProps) {
         </div>
 
         {/* Product Grid */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="p-4 md:flex-1 md:overflow-y-auto">
           {loading ? (
             <div className="text-center text-gray-500 text-xl">載入中...</div>
           ) : filteredProducts.length === 0 ? (
@@ -236,12 +236,23 @@ export default function POS({ onCheckout }: POSProps) {
       </div>
 
       {/* Right Panel - Cart and Checkout */}
-      <div className="w-1/3 flex flex-col bg-white border-l">
+      <div className="w-full md:w-1/3 flex flex-col bg-white border-t md:border-t-0 md:border-l">
         {/* Cart Section */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 sticky top-0 bg-white pb-2 border-b">
+        <div className="p-4 md:flex-1 md:overflow-y-auto">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 md:sticky md:top-0 bg-white pb-2 border-b">
             購物車
           </h2>
+
+          {/* Mobile sticky summary anchor (jump to checkout) */}
+          {cart.length === 0 ? null : (
+            <a
+              href="#pos-checkout"
+              className="md:hidden sticky top-0 z-10 mb-3 flex items-center justify-between rounded-lg bg-blue-600 px-4 py-3 font-bold text-white shadow"
+            >
+              <span>🛒 {cart.reduce((sum, item) => sum + item.quantity, 0)} 件</span>
+              <span>${total.toFixed(2)} 去結帳 ↓</span>
+            </a>
+          )}
 
           {cart.length === 0 ? (
             <div className="text-center text-gray-500 py-10">
@@ -262,7 +273,7 @@ export default function POS({ onCheckout }: POSProps) {
         </div>
 
         {/* Checkout Section */}
-        <div className="border-t p-4 bg-gray-50">
+        <div id="pos-checkout" className="border-t p-4 bg-gray-50 scroll-mt-4">
           <h2 className="text-xl font-bold text-gray-800 mb-4">結帳</h2>
 
           <div className="space-y-2 mb-4 text-lg">

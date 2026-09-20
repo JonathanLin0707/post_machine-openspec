@@ -176,7 +176,7 @@ export default function Orders() {
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4 flex justify-between items-center">
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-4 flex flex-wrap justify-between items-center gap-2">
           <h1 className="text-2xl font-bold text-gray-800">訂單查詢</h1>
           <button
             onClick={fetchOrders}
@@ -187,7 +187,7 @@ export default function Orders() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4 flex gap-4 items-center">
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-4 flex flex-wrap gap-4 items-center">
           <input
             type="text"
             placeholder="搜尋訂單 ID 或商品名稱..."

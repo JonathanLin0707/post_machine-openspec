@@ -18,13 +18,13 @@ export default function ExportConfirmationDialog({
   onCancel,
 }: ExportConfirmationDialogProps) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-        <div className="bg-blue-600 text-white px-6 py-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="bg-blue-600 text-white px-6 py-4 rounded-t-xl">
           <h2 className="text-2xl font-bold">{title}</h2>
           <p className="text-blue-100 mt-1">{message}</p>
         </div>
-        <div className="bg-gray-50 px-6 py-4 flex gap-3">
+        <div className="bg-gray-50 px-6 py-4 flex gap-3 sticky bottom-0 rounded-b-xl">
           <button
             type="button"
             onClick={onCancel}

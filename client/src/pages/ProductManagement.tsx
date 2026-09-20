@@ -84,7 +84,7 @@ export default function ProductManagement() {
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-4 flex justify-between items-center">
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-4 flex flex-wrap justify-between items-center gap-2">
           <h1 className="text-2xl font-bold text-gray-800">商品管理</h1>
           <button
             onClick={() => setShowAddModal(true)}
@@ -96,7 +96,7 @@ export default function ProductManagement() {
 
         {/* Search and Filter */}
         <div className="bg-white rounded-lg shadow-sm p-4 mb-4">
-          <div className="flex gap-3 mb-4">
+          <div className="flex flex-wrap gap-3 mb-4">
             <input
               type="text"
               placeholder="搜尋商品名稱..."
@@ -105,7 +105,7 @@ export default function ProductManagement() {
               className="flex-1 px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:outline-none text-lg"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <select
               value={selectedCategory || ''}
               onChange={(e) => setSelectedCategory(e.target.value || null)}
@@ -121,51 +121,53 @@ export default function ProductManagement() {
 
         {/* Product Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b-2 border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-lg font-bold text-gray-700">商品名稱</th>
-                <th className="px-6 py-4 text-left text-lg font-bold text-gray-700">分類</th>
-                <th className="px-6 py-4 text-left text-lg font-bold text-gray-700">條碼</th>
-                <th className="px-6 py-4 text-right text-lg font-bold text-gray-700">單價</th>
-                <th className="px-6 py-4 text-right text-lg font-bold text-gray-700">庫存</th>
-                <th className="px-6 py-4 text-center text-lg font-bold text-gray-700">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={6} className="text-center py-8 text-gray-500 text-xl">載入中...</td></tr>
-              ) : filteredProducts.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-8 text-gray-500 text-xl">沒有符合條件的商品</td></tr>
-              ) : (
-                filteredProducts.map(product => (
-                  <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-6 py-4 text-lg font-medium text-gray-800">{product.name}</td>
-                    <td className="px-6 py-4 text-lg text-gray-600">{product.category || '-'}</td>
-                    <td className="px-6 py-4 text-lg text-gray-500">{product.barcode || '-'}</td>
-                    <td className="px-6 py-4 text-right text-lg font-bold text-gray-800">${product.price.toFixed(2)}</td>
-                    <td className={`px-6 py-4 text-right text-lg font-bold ${product.stock < 10 ? 'text-red-600' : 'text-gray-600'}`}>{product.stock}</td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => handleEdit(product)}
-                          className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg font-semibold"
-                        >
-                          編輯
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product.id)}
-                          className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg font-semibold"
-                        >
-                          刪除
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px]">
+              <thead className="bg-gray-50 border-b-2 border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-lg font-bold text-gray-700">商品名稱</th>
+                  <th className="px-6 py-4 text-left text-lg font-bold text-gray-700">分類</th>
+                  <th className="px-6 py-4 text-left text-lg font-bold text-gray-700">條碼</th>
+                  <th className="px-6 py-4 text-right text-lg font-bold text-gray-700">單價</th>
+                  <th className="px-6 py-4 text-right text-lg font-bold text-gray-700">庫存</th>
+                  <th className="px-6 py-4 text-center text-lg font-bold text-gray-700">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={6} className="text-center py-8 text-gray-500 text-xl">載入中...</td></tr>
+                ) : filteredProducts.length === 0 ? (
+                  <tr><td colSpan={6} className="text-center py-8 text-gray-500 text-xl">沒有符合條件的商品</td></tr>
+                ) : (
+                  filteredProducts.map(product => (
+                    <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-6 py-4 text-lg font-medium text-gray-800">{product.name}</td>
+                      <td className="px-6 py-4 text-lg text-gray-600">{product.category || '-'}</td>
+                      <td className="px-6 py-4 text-lg text-gray-500">{product.barcode || '-'}</td>
+                      <td className="px-6 py-4 text-right text-lg font-bold text-gray-800">${product.price.toFixed(2)}</td>
+                      <td className={`px-6 py-4 text-right text-lg font-bold ${product.stock < 10 ? 'text-red-600' : 'text-gray-600'}`}>{product.stock}</td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleEdit(product)}
+                            className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg font-semibold"
+                          >
+                            編輯
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg font-semibold"
+                          >
+                            刪除
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Add/Edit Modal */}

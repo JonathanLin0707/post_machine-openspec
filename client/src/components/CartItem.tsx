@@ -20,7 +20,7 @@ export default function CartItem({ item, onIncrease, onDecrease, onRemove }: Car
       <div className="flex items-center gap-3">
         <div className="flex items-center bg-white rounded-lg border border-gray-300">
           <button 
-            className="px-3 py-2 text-red-600 hover:bg-red-50 font-bold rounded-l-lg"
+            className="px-3 py-3 md:py-2 text-red-600 hover:bg-red-50 font-bold rounded-l-lg"
             onClick={() => onDecrease(item.productId)}
             disabled={item.quantity <= 1}
           >
@@ -30,7 +30,7 @@ export default function CartItem({ item, onIncrease, onDecrease, onRemove }: Car
             {item.quantity}
           </span>
           <button 
-            className={`px-3 py-2 font-bold rounded-r-lg ${
+            className={`px-3 py-3 md:py-2 font-bold rounded-r-lg ${
               stock - item.quantity <= 0
                 ? 'bg-gray-400 cursor-not-allowed text-gray-500'
                 : 'bg-green-600 hover:bg-green-700 text-white'

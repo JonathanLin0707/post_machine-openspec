@@ -164,7 +164,7 @@ export default function SalesReport() {
         {/* Today's Summary */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-sm p-6 mb-4">
           <h2 className="text-xl font-bold text-white mb-4">今日銷售摘要</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white/20 rounded-lg p-4 text-center">
               <p className="text-blue-100 text-sm">訂單筆數</p>
               <p className="text-4xl font-bold text-white">{todaySummary.orderCount}</p>

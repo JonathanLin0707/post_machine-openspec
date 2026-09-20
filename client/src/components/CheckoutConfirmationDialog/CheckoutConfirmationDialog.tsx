@@ -34,8 +34,8 @@ export default function CheckoutConfirmationDialog({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="bg-blue-600 text-white px-6 py-4">
           <h2 className="text-2xl font-bold">結帳確認</h2>
@@ -43,7 +43,7 @@ export default function CheckoutConfirmationDialog({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 overflow-y-auto">
           {/* Order Items List */}
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">
@@ -93,7 +93,7 @@ export default function CheckoutConfirmationDialog({
           </div>
         </div>
 
-        {/* Footer Buttons */}
+        {/* Footer Buttons (flex sibling: always visible, no sticky needed) */}
         <div className="bg-gray-50 px-6 py-4 flex gap-3">
           <button
             onClick={onCancel}
