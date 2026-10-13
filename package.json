@@ -20,6 +20,9 @@
     "test:client": "npm run test --workspace=client",
     "test:server": "npm run test --workspace=server"
   },
+  "engines": {
+    "node": "22.x"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2",
     "tsx": "^4.7.1",

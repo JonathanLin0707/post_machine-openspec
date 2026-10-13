@@ -113,3 +113,57 @@ npx tsx server/scripts/migrate-sqlite-to-pg.ts --replace
 ```
 
 使用 `--replace` 會先清空目標表再匯入（保留原始 id 並修正 id 序列）。遷移前建議先以舊版（或手動）下載一份資料備份作為逃生門。
+
+## 部署到 Vercel
+
+本專案是一個 npm workspaces monorepo：`client`（Vite SPA）、`server`（Express API）、`shared`（型別）。Vercel 以「單一專案」部署：前端靜態檔走 CDN，Express 掛在一個 Serverless Function。
+
+### 為什麼不能「零設定」直接部署
+
+- Vercel 只會用專案**根目錄**推斷框架，根目錄沒有 `index.html`/Vite 設定，自動偵測會失敗。
+- Vercel **不執行 `express.static()`**，也不會自動找 `server/src/index.ts`，所以原本「後端同時託管 `client/dist`」的寫法在 Vercel 上不會生效。
+- Express 需要一個被 Vercel 辨識的函式入口。
+
+因此本專案已加入兩個檔案：
+
+| 檔案 | 作用 |
+|------|------|
+| `vercel.json` | 關閉框架自動偵測（`framework: null`）、指定建置指令與靜態輸出目錄、把 `/api/*` 與 `/health` 導到函式、其餘路徑 SPA fallback 到 `index.html` |
+| `api/index.mjs` | Vercel Function 入口，`export default` 匯出的 handler 直接呼叫 `server/dist/index.js` 的 Express app |
+
+`vercel.json` 的關鍵設定：
+
+```json
+{
+  "framework": null,
+  "buildCommand": "npm run build --workspace=shared && npm run build --workspace=client && npm run build --workspace=server",
+  "outputDirectory": "client/dist",
+  "functions": { "api/index.mjs": { "includeFiles": "server/dist/**" } },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.mjs" },
+    { "source": "/health", "destination": "/api/index.mjs" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
+```
+
+### 部署步驟
+
+1. 在 Vercel **Import** 這個 Git repository。
+2. **Root Directory 留空（= 專案根目錄）**，Framework Preset 選 **Other**。
+3. 建置與輸出目錄會由 `vercel.json` 決定，不需在 UI 手動填。
+4. 在 **Settings → Environment Variables** 設定：
+   - `DATABASE_URL`：外部受管 PostgreSQL 連線字串（必填，例如 Supabase / Neon / Railway）。
+   - `PGSSLMODE=require`：若資料庫要求 SSL（Neon、Vercel Postgres 等非 `supabase.*` 網域）**務必設定**，否則 `pg` 不會帶 SSL 而連線失敗。Supabase 網域則會自動判斷。
+5. Deploy。完成後：`https://<你的網域>/health` 應回 `{"status":"ok"}`（資料庫沒連上時回 503，但服務仍會啟動，這是設計）。
+
+### Serverless 注意事項
+
+- **務必使用連線池（pooler）連線字串**：Serverless 會依流量開多個實例，每個實例各有一個 `pg.Pool`（`max: 10`），直連容易把資料庫連線數吃滿。Supabase 請用 Supavisor pooler（port `6543`），Neon 請用 `-pooler` 主機。
+- `server/dist` 是 Vercel 建置時產生的（`git` 不追蹤），由 `buildCommand` 先編譯再打包進函式。
+- `better-sqlite3` 只在一次性遷移腳本使用，不會進入 runtime bundle；`engines.node` 已釘 `22.x` 以取得穩定的 prebuilt binary。
+- 本機可用 `npx vercel dev` 模擬（需先 `npm i -g vercel` 並 `vercel link`）。
+
+### 替代方案：拆成兩個 Vercel 專案
+
+若想讓前端與 API 各自獨立擴充（例如前端 CDN、API 獨立），可拆成兩個專案：`client` 一個（Framework = Vite）、`server` 一個（Framework = Express）。但因 `server` 依賴 workspace 的 `shared`，需讓 Vercel 從 repo 根目錄安裝，且要把 `client/src/services/api.ts` 的 `baseURL: '/api'` 改成讀取環境變數（例如 `import.meta.env.VITE_API_URL`）指向 API 網域。除非有明確需求，建議先用上面的單一專案部署。

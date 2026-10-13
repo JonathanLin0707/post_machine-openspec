@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm install",
+  "buildCommand": "npm run build --workspace=shared && npm run build --workspace=client && npm run build --workspace=server",
+  "outputDirectory": "client/dist",
+  "functions": {
+    "api/index.mjs": {
+      "includeFiles": "server/dist/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.mjs" },
+    { "source": "/health", "destination": "/api/index.mjs" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
