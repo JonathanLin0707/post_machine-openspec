@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>雜貨店 POS 系統架構圖</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f0f1f7;   /* indigo-tint */
+      --color-paper-2: #e4e7f1;
+      --color-ink:     #1f2937;   /* charcoal */
+      --color-muted:   #646b79;   /* slate */
+      --color-soft:    #5f6a84;
+      --color-accent:  #4f46e5;   /* indigo */
+      --font-sans:     'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', 'Noto Serif TC', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1320px; width: 100%; }
+    /* The SVG holds its readable width (min-width == the viewBox width, so the
+       type ramp is never silently scaled down). This wrapper lets a narrow
+       screen scroll the diagram instead of the whole page. */
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 1280px; display: block; }
+    /* Paper has no scrollbar, so the local scroller would clip instead of
+       scroll. Let the diagram scale down to the sheet: smaller but whole
+       beats sharp but cut off. Must come after the svg rule above - a media
+       query adds no specificity, so a later plain rule would win. */
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · Faithful · Grocery POS Monorepo</p>
+    <h1>雜貨店 POS 系統架構</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pos-architecture-title pos-architecture-desc">
+        <title id="pos-architecture-title">雜貨店 POS 系統架構圖</title>
+        <desc id="pos-architecture-desc">雜貨店 POS 系統的 Monorepo 架構：前端 React 頁面經 Axios 呼叫後端 Express 路由，路由以交易建立訂單並寫入 PostgreSQL，shared 工作區提供前後端共用的編譯期型別。</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#646b79"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f46e5"/></marker>
+          <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f0f1f7"/>
+
+        <!-- zones (painted first) -->
+        <rect x="40" y="128" width="900" height="232" rx="8" fill="#e4e7f1" stroke="rgba(31,41,55,0.12)" stroke-width="0.8"/>
+        <rect x="56" y="132" width="72" height="12" rx="2" fill="#f0f1f7"/>
+        <text x="92" y="141" fill="#5f6a84" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">CLIENT/</text>
+
+        <rect x="40" y="400" width="900" height="140" rx="8" fill="#e4e7f1" stroke="rgba(31,41,55,0.12)" stroke-width="0.8"/>
+        <rect x="56" y="404" width="72" height="12" rx="2" fill="#f0f1f7"/>
+        <text x="92" y="413" fill="#5f6a84" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">SERVER/</text>
+
+        <rect x="980" y="128" width="260" height="412" rx="8" fill="#e4e7f1" stroke="rgba(31,41,55,0.12)" stroke-width="0.8"/>
+        <rect x="996" y="132" width="72" height="12" rx="2" fill="#f0f1f7"/>
+        <text x="1032" y="141" fill="#5f6a84" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.14em">SHARED/</text>
+
+        <!-- arrows (drawn before nodes) -->
+        <!-- 收銀員 → 頁面 -->
+        <path d="M 640,96 V 104 Q 640,112 632,112 H 198 Q 190,112 190,120 V 160" fill="none" stroke="#646b79" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- 頁面 → 元件 -->
+        <line x1="316" y1="192" x2="356" y2="192" stroke="#646b79" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- 購物車 → 元件 -->
+        <line x1="648" y1="192" x2="608" y2="192" stroke="#646b79" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- 頁面 → API 服務 -->
+        <path d="M 190,224 V 288 Q 190,296 198,296 H 648" fill="none" stroke="#646b79" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <rect x="387" y="274" width="72" height="16" rx="2" fill="#f0f1f7"/>
+        <text x="423" y="285" fill="#5f6a84" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">呼叫 API</text>
+        <!-- 購物車 → API 服務 -->
+        <line x1="774" y1="224" x2="774" y2="264" stroke="#646b79" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <rect x="784" y="230" width="72" height="16" rx="2" fill="#f0f1f7"/>
+        <text x="820" y="241" fill="#5f6a84" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">結帳 POST</text>
+        <!-- API 服務 → 路由 (HTTP /api) -->
+        <path d="M 774,328 V 380 Q 774,388 766,388 H 322 Q 314,388 314,396 V 432" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <rect x="510" y="368" width="68" height="12" rx="2" fill="#f0f1f7"/>
+        <text x="544" y="377" fill="#5f6a84" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">GET /api/*</text>
+        <!-- 入口 → 路由 -->
+        <line x1="212" y1="464" x2="240" y2="464" stroke="#646b79" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- 入口 ⇢ 頁面 (靜態託管 client/dist) -->
+        <path d="M 138,432 V 224" fill="none" stroke="#646b79" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <rect x="148" y="300" width="64" height="16" rx="2" fill="#f0f1f7"/>
+        <text x="180" y="311" fill="#5f6a84" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">靜態託管</text>
+        <!-- 路由 → 服務 -->
+        <line x1="388" y1="464" x2="416" y2="464" stroke="#646b79" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- 路由 ⇒ 資料庫存取 (訂單交易, focal) -->
+        <path d="M 314,496 V 512 Q 314,520 322,520 H 633 Q 641,520 641,512 V 496" fill="none" stroke="#4f46e5" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+        <rect x="439" y="500" width="76" height="12" rx="2" fill="#f0f1f7"/>
+        <text x="477" y="509" fill="#5f6a84" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">POST /orders</text>
+        <!-- 服務 → 資料庫存取 -->
+        <line x1="564" y1="464" x2="592" y2="464" stroke="#646b79" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- 資料庫存取 → 連線池 -->
+        <line x1="740" y1="464" x2="768" y2="464" stroke="#646b79" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- 連線池 → PostgreSQL -->
+        <line x1="842" y1="496" x2="842" y2="580" stroke="#646b79" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <rect x="852" y="530" width="56" height="12" rx="2" fill="#f0f1f7"/>
+        <text x="880" y="539" fill="#5f6a84" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">pg · TCP</text>
+        <!-- 共用型別 ⇢ 購物車 (編譯期) -->
+        <path d="M 1110,304 V 200 Q 1110,192 1102,192 H 900" fill="none" stroke="#646b79" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <rect x="969" y="170" width="64" height="16" rx="2" fill="#f0f1f7"/>
+        <text x="1001" y="181" fill="#5f6a84" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">型別匯入</text>
+        <!-- 共用型別 ⇢ 資料庫存取 (編譯期, 跨 pg 線跳橋) -->
+        <path d="M 1110,368 V 556 Q 1110,564 1102,564 H 850 a 8,8 0 0,0 -16,0 H 723 Q 715,564 715,556 V 496" fill="none" stroke="#646b79" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <rect x="880" y="542" width="64" height="16" rx="2" fill="#f0f1f7"/>
+        <text x="912" y="553" fill="#5f6a84" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">型別匯入</text>
+
+        <!-- nodes -->
+        <!-- 收銀員 (input) -->
+        <rect x="560" y="48" width="160" height="48" rx="6" fill="#f0f1f7"/>
+        <rect x="560" y="48" width="160" height="48" rx="6" fill="rgba(100,107,121,0.10)" stroke="#5f6a84" stroke-width="1"/>
+        <rect x="568" y="54" width="34" height="12" rx="2" fill="transparent" stroke="rgba(95,106,132,0.40)" stroke-width="0.8"/>
+        <text x="585" y="63" fill="rgba(95,106,132,0.85)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">USER</text>
+        <text x="640" y="76" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">收銀員</text>
+        <text x="640" y="89" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">cashier · admin</text>
+
+        <!-- 頁面 (backend) -->
+        <rect x="64" y="160" width="252" height="64" rx="6" fill="#ffffff" stroke="#1f2937" stroke-width="1"/>
+        <rect x="72" y="166" width="42" height="12" rx="2" fill="transparent" stroke="rgba(31,41,55,0.40)" stroke-width="0.8"/>
+        <text x="93" y="175" fill="rgba(31,41,55,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">PAGES</text>
+        <text x="190" y="194" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">頁面</text>
+        <text x="190" y="210" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">POS · Products · Reports · Orders</text>
+
+        <!-- 共用元件 (backend) -->
+        <rect x="356" y="160" width="252" height="64" rx="6" fill="#ffffff" stroke="#1f2937" stroke-width="1"/>
+        <rect x="364" y="166" width="28" height="12" rx="2" fill="transparent" stroke="rgba(31,41,55,0.40)" stroke-width="0.8"/>
+        <text x="378" y="175" fill="rgba(31,41,55,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">UI</text>
+        <text x="482" y="194" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">共用元件</text>
+        <text x="482" y="210" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">Layout · CartItem · Dialogs</text>
+
+        <!-- 購物車狀態 (backend) -->
+        <rect x="648" y="160" width="252" height="64" rx="6" fill="#ffffff" stroke="#1f2937" stroke-width="1"/>
+        <rect x="656" y="166" width="42" height="12" rx="2" fill="transparent" stroke="rgba(31,41,55,0.40)" stroke-width="0.8"/>
+        <text x="677" y="175" fill="rgba(31,41,55,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">STORE</text>
+        <text x="774" y="194" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">購物車狀態</text>
+        <text x="774" y="210" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">useCartStore + persist</text>
+
+        <!-- API 服務 (backend) -->
+        <rect x="648" y="264" width="252" height="64" rx="6" fill="#ffffff" stroke="#1f2937" stroke-width="1"/>
+        <rect x="656" y="270" width="30" height="12" rx="2" fill="transparent" stroke="rgba(31,41,55,0.40)" stroke-width="0.8"/>
+        <text x="671" y="279" fill="rgba(31,41,55,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">SVC</text>
+        <text x="774" y="298" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">API 服務</text>
+        <text x="774" y="314" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">api.ts · databaseService.ts</text>
+
+        <!-- Express 入口 (backend) -->
+        <rect x="64" y="432" width="148" height="64" rx="6" fill="#ffffff" stroke="#1f2937" stroke-width="1"/>
+        <rect x="72" y="438" width="36" height="12" rx="2" fill="transparent" stroke="rgba(31,41,55,0.40)" stroke-width="0.8"/>
+        <text x="90" y="447" fill="rgba(31,41,55,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">MAIN</text>
+        <text x="138" y="466" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">Express 入口</text>
+        <text x="138" y="482" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">index.ts · :8080</text>
+
+        <!-- 路由 (backend) -->
+        <rect x="240" y="432" width="148" height="64" rx="6" fill="#ffffff" stroke="#1f2937" stroke-width="1"/>
+        <rect x="248" y="438" width="30" height="12" rx="2" fill="transparent" stroke="rgba(31,41,55,0.40)" stroke-width="0.8"/>
+        <text x="263" y="447" fill="rgba(31,41,55,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">API</text>
+        <text x="314" y="466" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">路由</text>
+        <text x="314" y="482" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">routes/*.ts</text>
+
+        <!-- 匯出/匯入服務 (backend) -->
+        <rect x="416" y="432" width="148" height="64" rx="6" fill="#ffffff" stroke="#1f2937" stroke-width="1"/>
+        <rect x="424" y="438" width="30" height="12" rx="2" fill="transparent" stroke="rgba(31,41,55,0.40)" stroke-width="0.8"/>
+        <text x="439" y="447" fill="rgba(31,41,55,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">SVC</text>
+        <text x="490" y="466" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">匯出/匯入服務</text>
+        <text x="490" y="482" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">csvExport · dbImport</text>
+
+        <!-- 資料庫存取 (focal) -->
+        <rect x="592" y="432" width="148" height="64" rx="6" fill="rgba(79,70,229,0.08)" stroke="#4f46e5" stroke-width="1.2"/>
+        <rect x="600" y="438" width="26" height="12" rx="2" fill="transparent" stroke="rgba(79,70,229,0.40)" stroke-width="0.8"/>
+        <text x="613" y="447" fill="rgba(79,70,229,0.90)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">DB</text>
+        <text x="666" y="466" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">資料庫存取</text>
+        <text x="666" y="482" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">query · withTransaction</text>
+
+        <!-- 連線池 (backend) -->
+        <rect x="768" y="432" width="148" height="64" rx="6" fill="#ffffff" stroke="#1f2937" stroke-width="1"/>
+        <rect x="776" y="438" width="36" height="12" rx="2" fill="transparent" stroke="rgba(31,41,55,0.40)" stroke-width="0.8"/>
+        <text x="794" y="447" fill="rgba(31,41,55,0.80)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">POOL</text>
+        <text x="842" y="466" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">連線池</text>
+        <text x="842" y="482" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">db/pool.ts · SSL</text>
+
+        <!-- PostgreSQL (store) -->
+        <rect x="742" y="580" width="200" height="64" rx="6" fill="#f0f1f7"/>
+        <rect x="742" y="580" width="200" height="64" rx="6" fill="rgba(31,41,55,0.05)" stroke="#646b79" stroke-width="1"/>
+        <rect x="750" y="586" width="28" height="12" rx="2" fill="transparent" stroke="rgba(100,107,121,0.40)" stroke-width="0.8"/>
+        <text x="764" y="595" fill="rgba(100,107,121,0.85)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">PG</text>
+        <text x="842" y="614" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">PostgreSQL</text>
+        <text x="842" y="630" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">products · orders · order_items</text>
+
+        <!-- 共用型別 (optional / compile-time) -->
+        <rect x="1012" y="304" width="196" height="64" rx="6" fill="rgba(31,41,55,0.02)" stroke="rgba(31,41,55,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+        <rect x="1020" y="310" width="34" height="12" rx="2" fill="transparent" stroke="rgba(31,41,55,0.30)" stroke-width="0.8"/>
+        <text x="1037" y="319" fill="rgba(31,41,55,0.70)" font-size="7" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">TYPE</text>
+        <text x="1110" y="338" fill="#1f2937" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">共用型別</text>
+        <text x="1110" y="354" fill="#646b79" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">types.ts → dist/</text>
+
+        <!-- legend strip -->
+        <line x1="40" y1="652" x2="1240" y2="652" stroke="rgba(31,41,55,0.10)" stroke-width="0.8"/>
+        <text x="40" y="676" fill="#646b79" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.14em">LEGEND</text>
+
+        <rect x="120" y="664" width="24" height="14" rx="4" fill="rgba(79,70,229,0.08)" stroke="#4f46e5" stroke-width="1.2"/>
+        <text x="152" y="676" fill="#646b79" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">訂單交易焦點</text>
+
+        <rect x="272" y="664" width="24" height="14" rx="4" fill="#ffffff" stroke="#1f2937" stroke-width="1"/>
+        <text x="304" y="676" fill="#646b79" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">服務元件</text>
+
+        <rect x="404" y="664" width="24" height="14" rx="4" fill="rgba(31,41,55,0.05)" stroke="#646b79" stroke-width="1"/>
+        <text x="436" y="676" fill="#646b79" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">資料庫</text>
+
+        <rect x="520" y="664" width="24" height="14" rx="4" fill="rgba(31,41,55,0.02)" stroke="rgba(31,41,55,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="552" y="676" fill="#646b79" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">編譯期型別</text>
+
+        <line x1="672" y1="671" x2="704" y2="671" stroke="#4f46e5" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+        <text x="712" y="676" fill="#646b79" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">交易路徑</text>
+
+        <line x1="800" y1="671" x2="832" y2="671" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+        <text x="840" y="676" fill="#646b79" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">HTTP /api</text>
+
+        <line x1="936" y1="671" x2="968" y2="671" stroke="#646b79" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <text x="976" y="676" fill="#646b79" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif">型別 / 託管</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>
