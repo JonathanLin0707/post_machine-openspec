@@ -650,7 +650,7 @@ shared/types.ts ◄── client（import 'shared'）、server（import 'shared'
 | 前端測試 | Vitest + Testing Library + jsdom；`client/src/__tests__/` 共 8 支 | `client/package.json`、`client/src/test/setup.ts` |
 | Lint | `eslint --max-warnings 0`（client、server）；shared 無 lint | `client/package.json`、`server/package.json` |
 | 型別建置 | `shared` 先 `tsc → dist/`；client 與 server 依賴其產物 | `shared/package.json` |
-| 根建置 | `npm run build --workspaces`（順序依 workspaces 宣告：client → server → shared，INFERRED 可能因 `shared/dist` 未就緒而失敗；Vercel 的 buildCommand 已先建 shared） | `package.json`、`vercel.json` |
+| 根建置 | `npm run build` 依序建置 shared → client → server。client / server 透過 `shared/dist/types.d.ts` 取得型別，`shared` 必須最先建置，否則在沒有 `shared/dist` 的環境（新 clone、CI）會出現 `TS2307: Cannot find module 'shared'`。新增 workspace 時需依此順序調整 `build` script | `package.json`、`vercel.json` |
 | CI | `npm ci` → `npm run lint` → `npm test` → `npm run build`，Node 22 | `.github/workflows/ci.yml` |
 
 ---

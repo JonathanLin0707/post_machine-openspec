@@ -77,8 +77,10 @@
 npm run lint                                   # 前後端 Lint（零警告才算通過）
 npm run test                                   # 前端測試
 npx vitest run server/__tests__                # 後端測試（需可用的 PostgreSQL）
-npm run build                                  # 建置所有工作區
+npm run build                                  # 建置所有工作區（會先建置 shared）
 ```
+
+> 新 clone 的環境若要單獨執行 `lint` 或 `test`，請先執行 `npm run build --workspace=shared`，產生 client / server 依賴的共用型別（`shared/dist`）。
 
 ## 部署
 

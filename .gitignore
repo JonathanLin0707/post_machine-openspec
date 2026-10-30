@@ -15,5 +15,6 @@ e2e-test-grocery.db
 .aider*
 client/dist/
 server/dist/
+shared/dist/
 .openspec-store/
 .vercel/
