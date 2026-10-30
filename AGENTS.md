@@ -53,4 +53,4 @@ If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is 
   並同步更新 spec。
 
 **Important**
-- 如果不確定架構，先閱讀 ARCHITECTURE.md。
+- 如果不確定架構，先閱讀 docs/ARCHITECTURE.md。
